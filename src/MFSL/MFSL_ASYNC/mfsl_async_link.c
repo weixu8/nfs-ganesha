@@ -154,8 +154,10 @@ fsal_status_t MFSL_link(mfsl_object_t * target_handle,  /* IN */
                         fsal_op_context_t * p_context,  /* IN */
                         mfsl_context_t * p_mfsl_context,        /* IN */
                         fsal_attrib_list_t * tgt_attributes,    /* [ IN/OUT ] */
-                        fsal_attrib_list_t * dir_attributes /* [ IN/OUT ] */ )
+                        void * pextra /* [ IN/OUT ] */ )
 {
+  fsal_attrib_list_t * dir_attributes = (fsal_attrib_list_t *) pextra;
+
   fsal_status_t fsal_status;
   mfsl_async_op_desc_t *pasyncopdesc = NULL;
   mfsl_object_specific_data_t *tgt_pasyncdata = NULL;

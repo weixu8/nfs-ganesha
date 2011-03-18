@@ -129,7 +129,9 @@ fsal_status_t MFSL_unlink(mfsl_object_t * dir_handle,   /* IN */
                           mfsl_object_t * object_handle,        /* INOUT */
                           fsal_op_context_t * p_context,        /* IN */
                           mfsl_context_t * p_mfsl_context,      /* IN */
-                          fsal_attrib_list_t * dir_attributes /* [ IN/OUT ] */ )
+                          fsal_attrib_list_t * dir_attributes, /* [ IN/OUT ] */ 
+                          void * pextra
+    )
 {
   fsal_status_t fsal_status;
   mfsl_async_op_desc_t *pasyncopdesc = NULL;

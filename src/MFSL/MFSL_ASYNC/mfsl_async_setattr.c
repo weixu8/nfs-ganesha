@@ -132,7 +132,8 @@ fsal_status_t MFSL_setattrs(mfsl_object_t * filehandle, /* IN */
                             fsal_op_context_t * p_context,      /* IN */
                             mfsl_context_t * p_mfsl_context,    /* IN */
                             fsal_attrib_list_t * attrib_set,    /* IN */
-                            fsal_attrib_list_t * object_attributes      /* [ IN/OUT ] */
+                            fsal_attrib_list_t * object_attributes,      /* [ IN/OUT ] */
+			    void * pextra
     )
 {
   fsal_status_t fsal_status;

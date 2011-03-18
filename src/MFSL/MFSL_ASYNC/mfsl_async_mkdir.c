@@ -168,7 +168,9 @@ fsal_status_t MFSL_mkdir(mfsl_object_t * parent_directory_handle,       /* IN */
                          fsal_accessmode_t accessmode,  /* IN */
                          mfsl_object_t * object_handle, /* OUT */
                          fsal_attrib_list_t * object_attributes,        /* [ IN/OUT ] */
-                         fsal_attrib_list_t * parent_attributes /* IN */ )
+                         fsal_attrib_list_t * parent_attributes, /* IN */ 
+			 void * pextra 
+    )
 {
   fsal_status_t fsal_status;
   mfsl_async_op_desc_t *pasyncopdesc = NULL;

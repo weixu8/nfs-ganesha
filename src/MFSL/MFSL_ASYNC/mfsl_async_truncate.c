@@ -122,8 +122,10 @@ fsal_status_t MFSAL_truncate_check_perms(mfsl_object_t * filehandle,
 fsal_status_t MFSL_truncate(mfsl_object_t * filehandle, /* IN */
                             fsal_op_context_t * p_context,      /* IN */
                             mfsl_context_t * p_mfsl_context,    /* IN */
-                            fsal_size_t length, fsal_file_t * file_descriptor,  /* INOUT */
-                            fsal_attrib_list_t * object_attributes      /* [ IN/OUT ] */
+                            fsal_size_t length,     /* IN */
+                            mfsl_file_t * file_descriptor,  /* INOUT */
+                            fsal_attrib_list_t * object_attributes,      /* [ IN/OUT ] */
+			    void * pextra
     )
 {
   fsal_status_t fsal_status;

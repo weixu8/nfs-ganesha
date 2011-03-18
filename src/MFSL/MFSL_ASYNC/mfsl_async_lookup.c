@@ -65,7 +65,9 @@ fsal_status_t MFSL_lookup(mfsl_object_t * parent_directory_handle,      /* IN */
                           fsal_op_context_t * p_context,        /* IN */
                           mfsl_context_t * p_mfsl_context,      /* IN */
                           mfsl_object_t * object_handle,        /* OUT */
-                          fsal_attrib_list_t * object_attributes /* [ IN/OUT ] */ )
+                          fsal_attrib_list_t * object_attributes, /* [ IN/OUT ] */ 
+			  void * pextra
+    )
 {
   fsal_status_t fsal_status;
   mfsl_object_specific_data_t *pasyncdata;

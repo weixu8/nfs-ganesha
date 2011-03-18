@@ -92,7 +92,8 @@ fsal_status_t MFSAL_getattrs_check_perms(mfsl_object_t * filehandle,    /* IN */
 fsal_status_t MFSL_getattrs(mfsl_object_t * filehandle, /* IN */
                             fsal_op_context_t * p_context,      /* IN */
                             mfsl_context_t * p_mfsl_context,    /* IN */
-                            fsal_attrib_list_t * object_attributes      /* [ IN/OUT ] */
+                            fsal_attrib_list_t * object_attributes,      /* [ IN/OUT ] */
+			    void * pextra
     )
 {
   fsal_status_t fsal_status;

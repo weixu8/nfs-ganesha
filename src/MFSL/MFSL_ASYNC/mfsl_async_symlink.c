@@ -151,7 +151,9 @@ fsal_status_t MFSL_symlink(mfsl_object_t * parent_directory_handle,     /* IN */
                            mfsl_context_t * p_mfsl_context,     /* IN */
                            fsal_accessmode_t accessmode,        /* IN (ignored); */
                            mfsl_object_t * link_handle, /* OUT */
-                           fsal_attrib_list_t * link_attributes /* [ IN/OUT ] */ )
+                           fsal_attrib_list_t * link_attributes, /* [ IN/OUT ] */ 
+			   void * pextra
+    )
 {
   fsal_status_t fsal_status;
   mfsl_async_op_desc_t *pasyncopdesc = NULL;
