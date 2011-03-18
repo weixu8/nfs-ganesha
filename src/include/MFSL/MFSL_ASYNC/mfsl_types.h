@@ -79,6 +79,11 @@ typedef struct mfsl_object__
   mfsl_async_health_t health;
 } mfsl_object_t;
 
+typedef struct mfsl_file__
+{
+  fsal_file_t fsal_file ;
+} mfsl_file_t ;
+
 typedef struct mfsl_precreated_object__
 {
   mfsl_object_t mobject;
