@@ -614,6 +614,11 @@ case $MFSL in
 		AC_DEFINE([_USE_MFSL_ASYNC], 1, [Use MFSL_ASYNC module which calls the FSAL functions asynchronously])
 		MFSL_LIB="\$(top_builddir)/MFSL/MFSL_ASYNC/libmfslasync.la"
 		;;
+	ASYNC2)
+		AC_DEFINE([_USE_MFSL], 1, [Use MFSL module])
+		AC_DEFINE([_USE_MFSL_ASYNC2], 1, [Use MFSL_ASYNC2 module which calls the FSAL functions asynchronously])
+		MFSL_LIB="\$(top_builddir)/MFSL/MFSL_ASYNC2/libmfslasync2.la"
+		;;
 	AIO)
 		AC_DEFINE([_USE_MFSL], 1, [Use MFSL module])
 		AC_DEFINE([_USE_MFSL_AIO], 1, [Use MFSL_AIO module with asynchronous FSAL read and write ])

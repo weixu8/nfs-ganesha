@@ -61,6 +61,10 @@
 #include "MFSL/MFSL_ASYNC/mfsl_types.h"
 #endif
 
+#ifdef _USE_MFSL_ASYNC2
+#include "MFSL/MFSL_ASYNC2/mfsl_types.h"
+#endif
+
 #ifdef _USE_MFSL_AIO
 #include "MFSL/MFSL_AIO/mfsl_types.h"
 #endif
