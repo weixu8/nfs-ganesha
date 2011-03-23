@@ -365,13 +365,14 @@ AM_CONDITIONAL(USE_MFSL_PNFS_FILE, test "$PNFS" = "SPNFS_LIKE")
 AM_CONDITIONAL(USE_MFSL,           test "$PNFS" = "SPNFS_LIKE")
 
 # MFSL switch argument (default is NULL )
-AC_ARG_WITH( [mfsl], AS_HELP_STRING([--with-mfsl=NONE|NULL|ASYNC|AIO|MIRROR|PROXY_RPCSECGSS (default=NULL)],[specify the type of intermediate FSAL module to be used] ),
+AC_ARG_WITH( [mfsl], AS_HELP_STRING([--with-mfsl=NONE|NULL|ASYNC|ASYNC2|AIO|MIRROR|PROXY_RPCSECGSS (default=NULL)],[specify the type of intermediate FSAL module to be used] ),
 	     MFSL="$withval", MFSL="NONE" )
 
 AM_CONDITIONAL(USE_MFSL_NONE,            test "$MFSL" = "NONE")
 AM_CONDITIONAL(USE_MFSL_AIO,             test "$MFSL" = "AIO")
 AM_CONDITIONAL(USE_MFSL_NULL,            test "$MFSL" = "NULL")
 AM_CONDITIONAL(USE_MFSL_ASYNC,           test "$MFSL" = "ASYNC")
+AM_CONDITIONAL(USE_MFSL_ASYNC2,           test "$MFSL" = "ASYNC2")
 AM_CONDITIONAL(USE_MFSL_PROXY_RPCSECGSS, test "$MFSL" = "PROXY_RPCSECGSS")
 
 AM_CONDITIONAL(USE_MFSL,                 test "$MFSL" != "NONE" ) 
@@ -689,6 +690,13 @@ if [[ $FSAL == "HPSS" ]] ; then
   fi
 fi
 
+# MFSL_ASYNC should not be used with HPSS
+if [[ $FSAL == "HPSS" ]] ; then
+  if [[ $MFSL == "ASYNC2" ]] ; then 
+		AC_MSG_ERROR([FSAL_HPSS and MFSL_ASYNC2 are incompatible])
+  fi
+fi
+
 AC_SUBST(FSAL_CFLAGS)
 AC_SUBST(FSAL_LDFLAGS)
 AC_SUBST(FSAL_LIB)
@@ -725,6 +733,7 @@ AC_CONFIG_FILES([include/Makefile
                  include/MFSL/MFSL_NULL/Makefile
                  include/MFSL/MFSL_AIO/Makefile
                  include/MFSL/MFSL_ASYNC/Makefile
+                 include/MFSL/MFSL_ASYNC2/Makefile
                  include/MFSL/MFSL_PNFS_FILE/Makefile
                  include/MFSL/MFSL_PROXY_RPCSECGSS/Makefile
                  include/PNFS/Makefile
@@ -771,6 +780,7 @@ AC_CONFIG_FILES([include/Makefile
 		 MFSL/Makefile
 		 MFSL/MFSL_NULL/Makefile                 
 		 MFSL/MFSL_ASYNC/Makefile                 
+		 MFSL/MFSL_ASYNC2/Makefile                 
 		 MFSL/MFSL_AIO/Makefile                 
 		 MFSL/MFSL_PNFS_FILE/Makefile                 
 		 MFSL/MFSL_PROXY_RPCSECGSS/Makefile                 
