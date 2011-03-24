@@ -1213,7 +1213,7 @@ int nfs_check_param_consistency(nfs_parameter_t * p_nfs_param)
            p_nfs_param->worker_param.lru_dupreq.nb_entry_prealloc);
       return 1;
     }
-#if defined (_USE_MFSL_ASYNC) || defined (_USE_MFSL_ASYNC2)
+#ifdef _USE_MFSL_ASYNC
   if(p_nfs_param->cache_layers_param.cache_inode_client_param.expire_type_attr != CACHE_INODE_EXPIRE_NEVER)
     {
       LogCrit

@@ -248,7 +248,7 @@ cache_entry_t *cache_inode_lookup_sw(cache_entry_t * pentry_parent,
           object_attributes.asked_attributes = pclient->attrmask;
 #ifdef _USE_MFSL
 
-#if defined (_USE_MFSL_ASYNC) || defined (_USE_MFSL_ASYNC2)
+#ifdef _USE_MFSL_ASYNC
           if(!mfsl_async_is_object_asynchronous(&pentry_parent->mobject))
             {
               /* If the parent is asynchronous, rely on the content of the cache inode parent entry 
@@ -260,7 +260,7 @@ cache_entry_t *cache_inode_lookup_sw(cache_entry_t * pentry_parent,
                                         pcontext,
                                         &pclient->mfsl_context,
                                         &object_handle, &object_attributes, NULL);
-#if defined (_USE_MFSL_ASYNC) || defined (_USE_MFSL_ASYNC2)
+#ifdef _USE_MFSL_ASYNC
             }
           else
             {
