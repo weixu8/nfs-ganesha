@@ -22,5 +22,5 @@ EXTRA_DIST=test_cache_access2.gansh     test_cache_stat.gansh      test_fsal_ren
 	test_cache_mkdir.gansh       test_fsal_access2.gansh    test_fsal_stat.gansh        test_nfs_rootaccess.gansh \
 	maketest.conf.in         test_cache_rename.gansh      test_fsal_chown.gansh      test_fsal_symlinks.gansh    test_nfs_stat.gansh \
 	test_cache_rights.gansh      test_fsal_handlecmp.gansh  test_nfs_chown.gansh        test_nfs_symlinks.gansh \
-	test_cache_access.gansh  test_cache_rootaccess.gansh  test_fsal_mkdir.gansh      test_nfs_handlecmp.gansh
-
+	test_cache_access.gansh  test_cache_rootaccess.gansh  test_fsal_mkdir.gansh      test_nfs_handlecmp.gansh \
+	test_mfsl_unlink.gansh
