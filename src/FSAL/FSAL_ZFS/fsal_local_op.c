@@ -276,7 +276,7 @@ fsal_status_t ZFSFSAL_unlink_access(zfsfsal_op_context_t * pcontext,  /* IN */
 {
   fsal_status_t fsal_status;
 
-  fsal_status = ZFSFSAL_test_access(pcontext, FSAL_W_OK, pattr);
+  fsal_status = ZFSFSAL_test_access(pcontext, FSAL_W_OK|FSAL_X_OK, pattr);
   if(FSAL_IS_ERROR(fsal_status))
     Return(fsal_status.major, fsal_status.minor, INDEX_FSAL_unlink_access);
 

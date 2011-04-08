@@ -330,7 +330,7 @@ fsal_status_t PROXYFSAL_unlink_access(proxyfsal_op_context_t * pcontext,        
 {
   fsal_status_t fsal_status;
 
-  fsal_status = PROXYFSAL_test_access(pcontext, FSAL_W_OK, pattr);
+  fsal_status = PROXYFSAL_test_access(pcontext, FSAL_W_OK|FSAL_X_OK, pattr);
   if(FSAL_IS_ERROR(fsal_status))
     Return(fsal_status.major, fsal_status.minor, INDEX_FSAL_unlink_access);
 
@@ -361,7 +361,7 @@ fsal_status_t PROXYFSAL_link_access(proxyfsal_op_context_t * pcontext,  /* IN */
 
   fsal_status = PROXYFSAL_test_access(pcontext, FSAL_W_OK, pattr);
   if(FSAL_IS_ERROR(fsal_status))
-    Return(fsal_status.major, fsal_status.minor, INDEX_FSAL_unlink_access);
+    Return(fsal_status.major, fsal_status.minor, INDEX_FSAL_unlink_access); /** @todo change to INDEX_FSAL_link_access */
 
   /* If this point is reached, then access is granted */
   Return(ERR_FSAL_NO_ERROR, 0, INDEX_FSAL_link_access);

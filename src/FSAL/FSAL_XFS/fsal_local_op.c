@@ -195,7 +195,7 @@ fsal_status_t XFSFSAL_unlink_access(xfsfsal_op_context_t * pcontext,    /* IN */
 {
   fsal_status_t fsal_status;
 
-  fsal_status = XFSFSAL_test_access(pcontext, FSAL_W_OK, pattr);
+  fsal_status = XFSFSAL_test_access(pcontext, FSAL_W_OK|FSAL_X_OK, pattr);
   if(FSAL_IS_ERROR(fsal_status))
     Return(fsal_status.major, fsal_status.minor, INDEX_FSAL_unlink_access);
 
