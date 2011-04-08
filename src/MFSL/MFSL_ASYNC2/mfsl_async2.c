@@ -247,12 +247,12 @@ fsal_status_t MFSL_setattrs(mfsl_object_t * filehandle, /* IN */
   return FSAL_setattrs(&filehandle->handle, p_context, attrib_set, object_attributes);
 }                               /* MFSL_setattrs */
 
-fsal_status_t MFSL_link(mfsl_object_t * target_handle,  /* IN */
-                        mfsl_object_t * dir_handle,     /* IN */
-                        fsal_name_t * p_link_name,      /* IN */
-                        fsal_op_context_t * p_context,  /* IN */
-                        mfsl_context_t * p_mfsl_context,        /* IN */
-                        fsal_attrib_list_t * attributes,    /* [ IN/OUT ] */ 
+fsal_status_t MFSL_link(mfsl_object_t * target_handle,   /* IN */
+                        mfsl_object_t * dir_handle,      /* IN */
+                        fsal_name_t * p_link_name,       /* IN */
+                        fsal_op_context_t * p_context,   /* IN */
+                        mfsl_context_t * p_mfsl_context, /* IN */
+                        fsal_attrib_list_t * attributes, /* [ IN/OUT ] */ 
 			void * pextra )
 {
   return FSAL_link(&target_handle->handle,
@@ -431,12 +431,12 @@ fsal_status_t MFSL_rename(mfsl_object_t * old_parentdir_handle, /* IN */
                      p_new_name, p_context, src_dir_attributes, tgt_dir_attributes);
 }                               /* MFSL_rename */
 
-fsal_status_t MFSL_unlink(mfsl_object_t * parentdir_handle,     /* IN */
-                          fsal_name_t * p_object_name,  /* IN */
-                          mfsl_object_t * object_handle,        /* INOUT */
-                          fsal_op_context_t * p_context,        /* IN */
-                          mfsl_context_t * p_mfsl_context,      /* IN */
-                          fsal_attrib_list_t * parentdir_attributes,     /* [IN/OUT ] */
+fsal_status_t MFSL_unlink(mfsl_object_t * parentdir_handle,          /* IN */
+                          fsal_name_t * p_object_name,               /* IN */
+                          mfsl_object_t * object_handle,             /* INOUT */
+                          fsal_op_context_t * p_context,             /* IN */
+                          mfsl_context_t * p_mfsl_context,           /* IN */
+                          fsal_attrib_list_t * parentdir_attributes, /* [IN/OUT ] */
 			  void * pextra
     )
 {
@@ -462,7 +462,7 @@ fsal_status_t MFSL_unlink(mfsl_object_t * parentdir_handle,     /* IN */
   parentdir_attributes_new = (fsal_attrib_list_t *) malloc(sizeof(fsal_attrib_list_t));
   /* looking for the type of object we unlink */
   parentdir_attributes_new->asked_attributes = FSAL_ATTR_TYPE;
-  FSAL_getattrs(&object_handle->handle, p_context, parentdir_attributes_new); /* we should get this asyncly */
+  FSAL_getattrs(&object_handle->handle, p_context, parentdir_attributes_new); /** todo: get this asyncly */
 
   /* if it's a directory, there is 1 link less to its parent dir */
   if(parentdir_attributes_new->type==FSAL_TYPE_DIR)
@@ -472,7 +472,7 @@ fsal_status_t MFSL_unlink(mfsl_object_t * parentdir_handle,     /* IN */
 
   /* looking for the modified attributes */
   parentdir_attributes_new->asked_attributes = ( FSAL_ATTR_SIZE | FSAL_ATTR_CTIME | FSAL_ATTR_MTIME );
-  FSAL_getattrs(&parentdir_handle->handle, p_context, parentdir_attributes_new);
+  MFSL_getattrs(parentdir_handle, p_context, NULL, parentdir_attributes_new, NULL);
   parentdir_attributes_new->filesize -= 1;
   parentdir_attributes_new->ctime.seconds = (fsal_uint_t) time(NULL);
   parentdir_attributes_new->ctime.nseconds = 0;                      /** todo: update */
