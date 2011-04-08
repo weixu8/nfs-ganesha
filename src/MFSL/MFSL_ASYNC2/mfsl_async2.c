@@ -443,6 +443,7 @@ fsal_status_t MFSL_unlink(mfsl_object_t * parentdir_handle,          /* IN */
   fsal_status_t fsal_status;                       /* status when we unlink syncly */
   fsal_status_t fsal_status2;                      /* status we got asyncly */
   fsal_attrib_list_t * parentdir_attributes_new;   /* parentdir attributes we compute asyncly */
+  fsal_attrib_list_t * object_attributes;          /* object attributes; we have to see if it's a dir. */
 
   /* sanity check */
   if(!p_context){
@@ -460,19 +461,20 @@ fsal_status_t MFSL_unlink(mfsl_object_t * parentdir_handle,          /* IN */
 
   /* populate a new attrib_list and see if we can guess the new attribs  */
   parentdir_attributes_new = (fsal_attrib_list_t *) malloc(sizeof(fsal_attrib_list_t));
-  /* looking for the type of object we unlink */
-  parentdir_attributes_new->asked_attributes = FSAL_ATTR_TYPE;
-  FSAL_getattrs(&object_handle->handle, p_context, parentdir_attributes_new); /** todo: get this asyncly */
+  object_attributes = (fsal_attrib_list_t *) malloc(sizeof(fsal_attrib_list_t));
 
-  /* if it's a directory, there is 1 link less to its parent dir */
-  if(parentdir_attributes_new->type==FSAL_TYPE_DIR)
-	  parentdir_attributes_new->numlinks = parentdir_attributes->numlinks - 1;
-  else
-	  parentdir_attributes_new->numlinks = parentdir_attributes->numlinks;
+  /* looking for the type of object we unlink. Is there any other way? */
+  object_attributes->asked_attributes = FSAL_ATTR_TYPE;
+  FSAL_getattrs(&object_handle->handle, p_context, object_attributes); /** todo: get this asyncly */
 
   /* looking for the modified attributes */
-  parentdir_attributes_new->asked_attributes = ( FSAL_ATTR_SIZE | FSAL_ATTR_CTIME | FSAL_ATTR_MTIME );
+  parentdir_attributes_new->asked_attributes = ( FSAL_ATTRS_POSIX );
   MFSL_getattrs(parentdir_handle, p_context, NULL, parentdir_attributes_new, NULL);
+
+  /* if it's a directory, there is 1 link less to its parent dir */
+  if(object_attributes->type==FSAL_TYPE_DIR)
+	  parentdir_attributes_new->numlinks -= 1;
+
   parentdir_attributes_new->filesize -= 1;
   parentdir_attributes_new->ctime.seconds = (fsal_uint_t) time(NULL);
   parentdir_attributes_new->ctime.nseconds = 0;                      /** todo: update */
@@ -512,6 +514,7 @@ fsal_status_t MFSL_unlink(mfsl_object_t * parentdir_handle,          /* IN */
 
   /* think to free your mallocs :) */
   free(parentdir_attributes_new);
+  free(object_attributes);
 
   return fsal_status;
 }                               /* MFSL_unlink */
