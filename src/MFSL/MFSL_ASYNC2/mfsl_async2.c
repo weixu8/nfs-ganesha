@@ -41,6 +41,7 @@
 #include "mfsl_types.h"
 #include "mfsl.h"
 #include "common_utils.h"
+#include "BuddyMalloc.h"
 
 #ifndef _USE_SWIG
 /******************************************************
@@ -460,8 +461,8 @@ fsal_status_t MFSL_unlink(mfsl_object_t * parentdir_handle,          /* IN */
   }
 
   /* populate a new attrib_list and see if we can guess the new attribs  */
-  parentdir_attributes_new = (fsal_attrib_list_t *) malloc(sizeof(fsal_attrib_list_t));
-  object_attributes = (fsal_attrib_list_t *) malloc(sizeof(fsal_attrib_list_t));
+  parentdir_attributes_new = (fsal_attrib_list_t *) BuddyMalloc(sizeof(fsal_attrib_list_t));
+  object_attributes = (fsal_attrib_list_t *) BuddyMalloc(sizeof(fsal_attrib_list_t));
 
   /* looking for the type of object we unlink. Is there any other way? */
   object_attributes->asked_attributes = FSAL_ATTR_TYPE;
@@ -513,8 +514,8 @@ fsal_status_t MFSL_unlink(mfsl_object_t * parentdir_handle,          /* IN */
 			  );
 
   /* think to free your mallocs :) */
-  free(parentdir_attributes_new);
-  free(object_attributes);
+  BuddyFree((BUDDY_ADDR_T) parentdir_attributes_new);
+  BuddyFree((BUDDY_ADDR_T) object_attributes);
 
   return fsal_status;
 }                               /* MFSL_unlink */
