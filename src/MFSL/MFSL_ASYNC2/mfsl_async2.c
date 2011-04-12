@@ -449,15 +449,15 @@ fsal_status_t MFSL_unlink(mfsl_object_t * parentdir_handle,          /* IN */
   /* sanity check */
   if(!p_context){
   	  LogCrit(COMPONENT_FSAL, "p_context should not be NULL!");
-	  Return(ERR_FSAL_INVAL, 0, INDEX_FSAL_unlink_access);
+	  MFSL_return(ERR_FSAL_INVAL, 0);
   }
   if(!parentdir_attributes){
   	  LogCrit(COMPONENT_FSAL, "parentdir_attributes should not be NULL!");
-	  Return(ERR_FSAL_INVAL, 0, INDEX_FSAL_unlink_access);
+	  MFSL_return(ERR_FSAL_INVAL, 0);
   }
   if(!&object_handle->handle){
   	  LogCrit(COMPONENT_FSAL, "object_handle should not be NULL!");
-	  Return(ERR_FSAL_INVAL, 0, INDEX_FSAL_unlink_access);
+	  MFSL_return(ERR_FSAL_INVAL, 0);
   }
 
   /* populate a new attrib_list and see if we can guess the new attribs  */
