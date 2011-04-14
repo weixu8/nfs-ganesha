@@ -471,7 +471,11 @@ fsal_status_t MFSL_unlink(mfsl_object_t * parentdir_handle,            /* IN */
 #endif
 	  parentdir_attributes_new.numlinks -= 1;
 
+#ifdef _USE_PROXY
+  /* PROXY sees filesize in octets */
+#else
   parentdir_attributes_new.filesize -= 1;
+#endif
   parentdir_attributes_new.ctime.seconds = (fsal_uint_t) time(NULL);
   parentdir_attributes_new.ctime.nseconds = 0;
   parentdir_attributes_new.mtime.seconds = parentdir_attributes_new.ctime.seconds;
