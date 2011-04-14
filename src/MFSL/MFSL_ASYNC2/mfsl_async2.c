@@ -432,27 +432,27 @@ fsal_status_t MFSL_rename(mfsl_object_t * old_parentdir_handle, /* IN */
                      p_new_name, p_context, src_dir_attributes, tgt_dir_attributes);
 }                               /* MFSL_rename */
 
-fsal_status_t MFSL_unlink(mfsl_object_t * parentdir_handle,          /* IN */
-                          fsal_name_t * p_object_name,               /* IN */
-                          mfsl_object_t * object_handle,             /* INOUT */
-                          fsal_op_context_t * p_context,             /* IN */
-                          mfsl_context_t * p_mfsl_context,           /* IN */
-                          fsal_attrib_list_t * parentdir_attributes, /* [IN/OUT ] */
+fsal_status_t MFSL_unlink(mfsl_object_t * parentdir_handle,            /* IN */
+                          fsal_name_t * p_object_name,                 /* IN */
+                          mfsl_object_t * object_handle,               /* INOUT */
+                          fsal_op_context_t * p_context,               /* IN */
+                          mfsl_context_t * p_mfsl_context,             /* IN */
+                          fsal_attrib_list_t * p_parentdir_attributes, /* [IN/OUT ] */
 			  void * pextra
     )
 {
   fsal_status_t fsal_status;                       /* status when we unlink syncly */
   fsal_status_t fsal_status2;                      /* status we got asyncly */
-  fsal_attrib_list_t * parentdir_attributes_new;   /* parentdir attributes we compute asyncly */
-  fsal_attrib_list_t * object_attributes;          /* object attributes; we have to see if it's a dir. */
+  fsal_attrib_list_t parentdir_attributes_new;     /* parentdir attributes we compute asyncly */
+  fsal_attrib_list_t * p_object_attributes;        /* object attributes; we have to see if it's a dir. */
 
   /* sanity check */
   if(!p_context){
   	  LogCrit(COMPONENT_FSAL, "p_context should not be NULL!");
 	  MFSL_return(ERR_FSAL_INVAL, 0);
   }
-  if(!parentdir_attributes){
-  	  LogCrit(COMPONENT_FSAL, "parentdir_attributes should not be NULL!");
+  if(!p_parentdir_attributes){
+  	  LogCrit(COMPONENT_FSAL, "p_parentdir_attributes should not be NULL!");
 	  MFSL_return(ERR_FSAL_INVAL, 0);
   }
   if(!&object_handle->handle){
@@ -460,38 +460,29 @@ fsal_status_t MFSL_unlink(mfsl_object_t * parentdir_handle,          /* IN */
 	  MFSL_return(ERR_FSAL_INVAL, 0);
   }
 
-  /* populate a new attrib_list and see if we can guess the new attribs  */
-  parentdir_attributes_new = (fsal_attrib_list_t *) BuddyMalloc(sizeof(fsal_attrib_list_t));
-  object_attributes = (fsal_attrib_list_t *) BuddyMalloc(sizeof(fsal_attrib_list_t));
-
-  /* looking for the type of object we unlink. Is there any other way? */
-  object_attributes->asked_attributes = FSAL_ATTR_TYPE;
-  FSAL_getattrs(&object_handle->handle, p_context, object_attributes); /** todo: get this asyncly */
-
-  /* looking for the modified attributes */
-  parentdir_attributes_new->asked_attributes = ( FSAL_ATTRS_POSIX );
-  MFSL_getattrs(parentdir_handle, p_context, NULL, parentdir_attributes_new, NULL);
+  /* populate a new attrib_list with parentdir_attributes and see if we can guess the new attribs  */
+  memcpy(&parentdir_attributes_new, p_parentdir_attributes, sizeof(fsal_attrib_list_t));
 
   /* if it's a directory, there is 1 link less to its parent dir */
-  if(object_attributes->type==FSAL_TYPE_DIR)
-	  parentdir_attributes_new->numlinks -= 1;
+  if(object_handle->handle.data.type == FSAL_TYPE_DIR)
+	  parentdir_attributes_new.numlinks -= 1;
 
-  parentdir_attributes_new->filesize -= 1;
-  parentdir_attributes_new->ctime.seconds = (fsal_uint_t) time(NULL);
-  parentdir_attributes_new->ctime.nseconds = 0;                      /** todo: update */
-  parentdir_attributes_new->mtime.seconds = parentdir_attributes_new->ctime.seconds;
-  parentdir_attributes_new->mtime.nseconds = parentdir_attributes_new->ctime.nseconds;
+  parentdir_attributes_new.filesize -= 1;
+  parentdir_attributes_new.ctime.seconds = (fsal_uint_t) time(NULL);
+  parentdir_attributes_new.ctime.nseconds = 0;
+  parentdir_attributes_new.mtime.seconds = parentdir_attributes_new.ctime.seconds;
+  parentdir_attributes_new.mtime.nseconds = parentdir_attributes_new.ctime.nseconds;
   /* end populate */
 
 
   /* check in cache for rights */
-  fsal_status2 = FSAL_unlink_access(p_context, parentdir_attributes);
+  fsal_status2 = FSAL_unlink_access(p_context, p_parentdir_attributes);
 
   /* check rights directly */
   fsal_status = FSAL_unlink(&parentdir_handle->handle,
   		  p_object_name, 
 		  p_context, 
-		  parentdir_attributes
+		  p_parentdir_attributes
 		  );
 
   /* Does status match? 'cause it should */
@@ -502,20 +493,16 @@ fsal_status_t MFSL_unlink(mfsl_object_t * parentdir_handle,          /* IN */
 			  );
 
   /* Does computed attributes match with reality? */
-  if ((parentdir_attributes_new->filesize != parentdir_attributes->filesize)
-  		  || (parentdir_attributes_new->numlinks != parentdir_attributes->numlinks)
-		  || (parentdir_attributes_new->ctime.seconds != parentdir_attributes->ctime.seconds)
+  if (               (parentdir_attributes_new.filesize      != p_parentdir_attributes->filesize)
+  		  || (parentdir_attributes_new.numlinks      != p_parentdir_attributes->numlinks)
+		  || (parentdir_attributes_new.ctime.seconds != p_parentdir_attributes->ctime.seconds)
 		  )
   	  LogCrit(COMPONENT_FSAL, "Attributes don't match! filesize: %llu %llu ; numlinks: %lu %lu ; ctime: %u.%u %u.%u",
-	  		  parentdir_attributes_new->filesize, parentdir_attributes->filesize,
-			  (unsigned long) parentdir_attributes_new->numlinks, (unsigned long) parentdir_attributes->numlinks,
-			  parentdir_attributes_new->ctime.seconds, parentdir_attributes_new->ctime.nseconds,
-			  parentdir_attributes->ctime.seconds, parentdir_attributes->ctime.nseconds
+	  		  parentdir_attributes_new.filesize, p_parentdir_attributes->filesize,
+			  (unsigned long) parentdir_attributes_new.numlinks, (unsigned long) p_parentdir_attributes->numlinks,
+			  parentdir_attributes_new.ctime.seconds, parentdir_attributes_new.ctime.nseconds,
+			  p_parentdir_attributes->ctime.seconds, p_parentdir_attributes->ctime.nseconds
 			  );
-
-  /* think to free your mallocs :) */
-  BuddyFree((BUDDY_ADDR_T) parentdir_attributes_new);
-  BuddyFree((BUDDY_ADDR_T) object_attributes);
 
   return fsal_status;
 }                               /* MFSL_unlink */
