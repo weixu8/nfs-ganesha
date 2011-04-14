@@ -266,6 +266,10 @@ cache_inode_status_t cache_inode_remove_sw(cache_entry_t * pentry,             /
   pclient->stat.nb_call_total += 1;
   pclient->stat.func_stats.nb_call[CACHE_INODE_REMOVE] += 1;
 
+  /* structure initialisation */
+  memset((char*) &remove_attr, 0, sizeof(remove_attr));
+  memset((char*) &after_attr, 0, sizeof(after_attr));
+
   /* pentry is a directory */
   if(use_mutex)
     P_w(&pentry->lock);
@@ -393,10 +397,9 @@ cache_inode_status_t cache_inode_remove_sw(cache_entry_t * pentry,             /
                                 &to_remove_entry->mobject,
                                 pcontext, &pclient->mfsl_context, &after_attr,
                                 NULL);
-
-#else
+#else /* _USE_MFSL */
       fsal_status = FSAL_unlink(&fsal_handle_parent, pnode_name, pcontext, &after_attr);
-#endif
+#endif /* _USE_MFSL */
 
       /* Set the 'after' attr */
       if(pattr != NULL)
