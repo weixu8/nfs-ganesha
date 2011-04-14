@@ -464,7 +464,11 @@ fsal_status_t MFSL_unlink(mfsl_object_t * parentdir_handle,            /* IN */
   memcpy(&parentdir_attributes_new, p_parentdir_attributes, sizeof(fsal_attrib_list_t));
 
   /* if it's a directory, there is 1 link less to its parent dir */
+#ifdef _USE_PROXY
+  if(object_handle->handle.data.object_type_reminder == FSAL_TYPE_DIR)
+#else
   if(object_handle->handle.data.type == FSAL_TYPE_DIR)
+#endif
 	  parentdir_attributes_new.numlinks -= 1;
 
   parentdir_attributes_new.filesize -= 1;
