@@ -233,13 +233,19 @@ cache_inode_status_t cache_inode_link(cache_entry_t * pentry_src,
 #ifdef _USE_MFSL
   cache_inode_get_attributes(pentry_src, &link_attributes);
   cache_inode_get_attributes(pentry_dir_dest, &dirdest_attributes);
+#ifdef _USE_MFSL_ASYNC2
+  fsal_status =
+      MFSL_link(&pentry_src->mobject, &pentry_dir_dest->mobject, plink_name, pcontext,
+                &pclient->mfsl_context, &link_attributes, &dirdest_attributes);
+#else /* _USE_MFSL_ASYNC2 */
   fsal_status =
       MFSL_link(&pentry_src->mobject, &pentry_dir_dest->mobject, plink_name, pcontext,
                 &pclient->mfsl_context, &link_attributes, NULL);
-#else
+#endif /* _USE_MFSL_ASYNC2 */
+#else /* _USE_MFSL */
   fsal_status =
       FSAL_link(&handle_src, &handle_dest, plink_name, pcontext, &link_attributes);
-#endif
+#endif /* _USE_MFSL */
   if(FSAL_IS_ERROR(fsal_status))
     {
       *pstatus = cache_inode_error_convert(fsal_status);

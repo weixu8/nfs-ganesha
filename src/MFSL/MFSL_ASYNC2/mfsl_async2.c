@@ -42,6 +42,9 @@
 #include "mfsl.h"
 #include "common_utils.h"
 
+/* We want to use memcpy() */
+#include <string.h>
+
 #ifndef _USE_SWIG
 /******************************************************
  *            Attribute mask management.
@@ -247,16 +250,91 @@ fsal_status_t MFSL_setattrs(mfsl_object_t * filehandle, /* IN */
   return FSAL_setattrs(&filehandle->handle, p_context, attrib_set, object_attributes);
 }                               /* MFSL_setattrs */
 
-fsal_status_t MFSL_link(mfsl_object_t * target_handle,  /* IN */
-                        mfsl_object_t * dir_handle,     /* IN */
-                        fsal_name_t * p_link_name,      /* IN */
-                        fsal_op_context_t * p_context,  /* IN */
-                        mfsl_context_t * p_mfsl_context,        /* IN */
-                        fsal_attrib_list_t * attributes,    /* [ IN/OUT ] */ 
-			void * pextra )
+fsal_status_t MFSL_link(mfsl_object_t * target_handle,   /* IN */
+                        mfsl_object_t * dir_handle,      /* IN */
+                        fsal_name_t * p_link_name,       /* IN */
+                        fsal_op_context_t * p_context,   /* IN */
+                        mfsl_context_t * p_mfsl_context, /* IN */
+                        fsal_attrib_list_t * attributes, /* [ IN/OUT ] */
+			void * pextra )                  /* [ IN/OUT ] */
 {
-  return FSAL_link(&target_handle->handle,
-                   &dir_handle->handle, p_link_name, p_context, attributes);
+	fsal_status_t fsal_status;
+	fsal_status_t fsal_status2;
+	fsal_attrib_list_t * p_attr_destdir;   /*   given destination directory attributes */
+	fsal_attrib_list_t p_attr_destdir_new; /* guessed destination directory attributes */
+	fsal_attrib_list_t p_attr_obj_new;     /* guessed object attributes */
+
+	/* pextra contains destination directory attributes */
+	p_attr_destdir = (fsal_attrib_list_t *) pextra;
+
+	/* Sanity checks */
+	if(!p_context || !p_attr_destdir)
+	{
+		LogCrit(COMPONENT_FSAL, "Argument missing!");
+		MFSL_return(ERR_FSAL_INVAL, 0);
+	}
+
+	/* copy destination directory attributes in a new structure */
+	memcpy((void *) &p_attr_destdir_new, (void *) p_attr_destdir, sizeof(fsal_attrib_list_t));
+	/* copy object attributes in a new structure */
+	memcpy((void *) &p_attr_obj_new, (void *) attributes, sizeof(fsal_attrib_list_t));
+
+	/* Async Check */
+	fsal_status2 = FSAL_link_access(p_context, p_attr_destdir);
+
+	/* Sync Check and do */
+	fsal_status = FSAL_link(&target_handle->handle,
+			        &dir_handle->handle,
+				p_link_name,
+				p_context,
+				attributes
+				);
+
+	/* Guess destination directory attributes */
+	p_attr_destdir_new.filesize      += 1;    /** todo: this is not true for all FSAL... */
+	p_attr_destdir_new.ctime.seconds  = time(NULL);
+	p_attr_destdir_new.ctime.nseconds = 0;
+	p_attr_destdir_new.mtime.seconds  = p_attr_destdir_new.ctime.seconds;
+	p_attr_destdir_new.mtime.nseconds = 0;
+	/* Guess object attributes */
+	p_attr_obj_new.numlinks      += 1;
+	p_attr_obj_new.ctime.seconds  = p_attr_destdir_new.ctime.seconds;
+	p_attr_obj_new.ctime.nseconds = p_attr_destdir_new.ctime.nseconds;
+
+	/* Guessed destination directory attributes should match with sync ones */
+	if(                (p_attr_destdir->filesize       != p_attr_destdir_new.filesize)
+			|| (p_attr_destdir->ctime.seconds  != p_attr_destdir_new.ctime.seconds)
+			|| (p_attr_destdir->ctime.nseconds != p_attr_destdir_new.ctime.nseconds)
+			|| (p_attr_destdir->mtime.seconds  != p_attr_destdir_new.mtime.seconds)
+			|| (p_attr_destdir->mtime.nseconds != p_attr_destdir_new.mtime.nseconds)
+		)
+		LogCrit(COMPONENT_FSAL, "Guessed destination directory attributes don't match with sync ones! Size: %llu vs %llu. Ctime: (%u.%u) vs (%u.%u). Mtime: (%u.%u) vs (%u.%u).",
+				p_attr_destdir->filesize,         p_attr_destdir_new.filesize,
+				p_attr_destdir->ctime.seconds,    p_attr_destdir->ctime.nseconds,
+				p_attr_destdir_new.ctime.seconds, p_attr_destdir_new.ctime.nseconds,
+				p_attr_destdir->mtime.seconds,    p_attr_destdir->mtime.nseconds,
+				p_attr_destdir_new.mtime.seconds, p_attr_destdir_new.mtime.nseconds
+				);
+
+	/* Guessed object attributes should match with sync ones */
+	if(                (p_attr_obj_new.numlinks       != attributes->numlinks)
+			|| (p_attr_obj_new.ctime.seconds  != attributes->ctime.seconds)
+			|| (p_attr_obj_new.ctime.nseconds != attributes->ctime.nseconds)
+			)
+		LogCrit(COMPONENT_FSAL, "Guessed object attributes don't match with sync ones! Numlinks: %lu vs %lu. Ctime: (%u.%u) vs (%u.%u).",
+				p_attr_destdir->numlinks,         p_attr_destdir_new.numlinks,
+				p_attr_destdir->ctime.seconds,    p_attr_destdir->ctime.nseconds,
+				p_attr_destdir_new.ctime.seconds, p_attr_destdir_new.ctime.nseconds
+				);
+
+	/* Status should match */
+	if((fsal_status.major != fsal_status2.major) || (fsal_status.minor != fsal_status2.minor))
+		LogCrit(COMPONENT_FSAL, "Sync and Async status don't match! Sync: (%u,%u). Async: (%u,%u).",
+				fsal_status.major,  fsal_status.minor,
+				fsal_status2.major, fsal_status2.minor
+				);
+
+	return fsal_status;
 }                               /* MFSL_link */
 
 fsal_status_t MFSL_opendir(mfsl_object_t * dir_handle,  /* IN */
