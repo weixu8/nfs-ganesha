@@ -255,7 +255,7 @@ fsal_status_t MFSL_link(mfsl_object_t * target_handle,   /* IN */
                         fsal_name_t * p_link_name,       /* IN */
                         fsal_op_context_t * p_context,   /* IN */
                         mfsl_context_t * p_mfsl_context, /* IN */
-                        fsal_attrib_list_t * attributes, /* [ IN/OUT ] */
+                        fsal_attrib_list_t * p_attr_obj, /* [ IN/OUT ] */
 			void * pextra )                  /* [ IN/OUT ] */
 {
 	fsal_status_t fsal_status;
@@ -277,7 +277,7 @@ fsal_status_t MFSL_link(mfsl_object_t * target_handle,   /* IN */
 	/* copy destination directory attributes in a new structure */
 	memcpy((void *) &p_attr_destdir_new, (void *) p_attr_destdir, sizeof(fsal_attrib_list_t));
 	/* copy object attributes in a new structure */
-	memcpy((void *) &p_attr_obj_new, (void *) attributes, sizeof(fsal_attrib_list_t));
+	memcpy((void *) &p_attr_obj_new, (void *) p_attr_obj, sizeof(fsal_attrib_list_t));
 
 	/* Async Check */
 	fsal_status2 = FSAL_link_access(p_context, p_attr_destdir);
@@ -287,7 +287,7 @@ fsal_status_t MFSL_link(mfsl_object_t * target_handle,   /* IN */
 			        &dir_handle->handle,
 				p_link_name,
 				p_context,
-				attributes
+				p_attr_obj
 				);
 
 	/* Guess destination directory attributes */
@@ -317,14 +317,14 @@ fsal_status_t MFSL_link(mfsl_object_t * target_handle,   /* IN */
 				);
 
 	/* Guessed object attributes should match with sync ones */
-	if(                (p_attr_obj_new.numlinks       != attributes->numlinks)
-			|| (p_attr_obj_new.ctime.seconds  != attributes->ctime.seconds)
-			|| (p_attr_obj_new.ctime.nseconds != attributes->ctime.nseconds)
+	if(                (p_attr_obj_new.numlinks       != p_attr_obj->numlinks)
+			|| (p_attr_obj_new.ctime.seconds  != p_attr_obj->ctime.seconds)
+			|| (p_attr_obj_new.ctime.nseconds != p_attr_obj->ctime.nseconds)
 			)
 		LogCrit(COMPONENT_FSAL, "Guessed object attributes don't match with sync ones! Numlinks: %lu vs %lu. Ctime: (%u.%u) vs (%u.%u).",
-				p_attr_destdir->numlinks,         p_attr_destdir_new.numlinks,
-				p_attr_destdir->ctime.seconds,    p_attr_destdir->ctime.nseconds,
-				p_attr_destdir_new.ctime.seconds, p_attr_destdir_new.ctime.nseconds
+				p_attr_obj->numlinks,         p_attr_obj_new.numlinks,
+				p_attr_obj->ctime.seconds,    p_attr_obj->ctime.nseconds,
+				p_attr_obj_new.ctime.seconds, p_attr_obj_new.ctime.nseconds
 				);
 
 	/* Status should match */
