@@ -289,8 +289,8 @@ fsal_status_t ZFSFSAL_unlink_access(zfsfsal_op_context_t * pcontext,  /* IN */
  * FSAL_link_access :
  * test if a client identified by cred can link to a directory knowing its attributes
  *
- * \param pcontext (in fsal_cred_t *) user's context.
- * \param pattr      destination directory attributes
+ * \param pcontext   (in fsal_cred_t *) user's context.
+ * \param pattrdest  destination directory attributes
  *
  * \return Major error codes :
  *        - ERR_FSAL_NO_ERROR     (no error)
@@ -300,14 +300,14 @@ fsal_status_t ZFSFSAL_unlink_access(zfsfsal_op_context_t * pcontext,  /* IN */
  *        - ERR_FSAL_SERVERFAULT  (unexpected error)
  */
 
-fsal_status_t ZFSFSAL_link_access(zfsfsal_op_context_t * pcontext,      /* IN */
-                                  fsal_attrib_list_t * pattr)   /* IN */
+fsal_status_t ZFSFSAL_link_access(zfsfsal_op_context_t * pcontext,  /* IN */
+                                    fsal_attrib_list_t * pattrdest) /* IN */
 {
   fsal_status_t fsal_status;
 
-  fsal_status = ZFSFSAL_test_access(pcontext, FSAL_W_OK, pattr);
+  fsal_status = ZFSFSAL_test_access(pcontext, ( FSAL_W_OK | FSAL_X_OK ), pattrdest);
   if(FSAL_IS_ERROR(fsal_status))
-    Return(fsal_status.major, fsal_status.minor, INDEX_FSAL_unlink_access);
+    Return(fsal_status.major, fsal_status.minor, INDEX_FSAL_link_access);
 
   /* If this point is reached, then access is granted */
   Return(ERR_FSAL_NO_ERROR, 0, INDEX_FSAL_link_access);
