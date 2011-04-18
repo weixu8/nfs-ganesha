@@ -262,6 +262,7 @@ fsal_status_t MFSL_link(mfsl_object_t * target_handle,   /* IN */
 	fsal_status_t fsal_status2;
 	fsal_attrib_list_t * p_attr_destdir;   /*   given destination directory attributes */
 	fsal_attrib_list_t p_attr_destdir_new; /* guessed destination directory attributes */
+	fsal_attrib_list_t p_attr_destdir_old; /* syncly retrived destination directory attributes, just to check */
 	fsal_attrib_list_t p_attr_obj_new;     /* guessed object attributes */
 
 	/* pextra contains destination directory attributes */
@@ -276,6 +277,7 @@ fsal_status_t MFSL_link(mfsl_object_t * target_handle,   /* IN */
 
 	/* copy destination directory attributes in a new structure */
 	memcpy((void *) &p_attr_destdir_new, (void *) p_attr_destdir, sizeof(fsal_attrib_list_t));
+	memcpy((void *) &p_attr_destdir_old, (void *) p_attr_destdir, sizeof(fsal_attrib_list_t));
 	/* copy object attributes in a new structure */
 	memcpy((void *) &p_attr_obj_new, (void *) p_attr_obj, sizeof(fsal_attrib_list_t));
 
@@ -296,24 +298,26 @@ fsal_status_t MFSL_link(mfsl_object_t * target_handle,   /* IN */
 	p_attr_destdir_new.ctime.nseconds = 0;
 	p_attr_destdir_new.mtime.seconds  = p_attr_destdir_new.ctime.seconds;
 	p_attr_destdir_new.mtime.nseconds = 0;
+	/* Syncly retrieve destination directory attributes, just to check */
+	FSAL_getattrs(&dir_handle->handle, p_context, &p_attr_destdir_old);
 	/* Guess object attributes */
 	p_attr_obj_new.numlinks      += 1;
 	p_attr_obj_new.ctime.seconds  = p_attr_destdir_new.ctime.seconds;
 	p_attr_obj_new.ctime.nseconds = p_attr_destdir_new.ctime.nseconds;
 
 	/* Guessed destination directory attributes should match with sync ones */
-	if(                (p_attr_destdir->filesize       != p_attr_destdir_new.filesize)
-			|| (p_attr_destdir->ctime.seconds  != p_attr_destdir_new.ctime.seconds)
-			|| (p_attr_destdir->ctime.nseconds != p_attr_destdir_new.ctime.nseconds)
-			|| (p_attr_destdir->mtime.seconds  != p_attr_destdir_new.mtime.seconds)
-			|| (p_attr_destdir->mtime.nseconds != p_attr_destdir_new.mtime.nseconds)
+	if(                (p_attr_destdir_old.filesize       != p_attr_destdir_new.filesize) /* /!\ p_attr_destdir is not updated by FSAL_link. We have to find another way. */ 
+			|| (p_attr_destdir_old.ctime.seconds  != p_attr_destdir_new.ctime.seconds)
+			|| (p_attr_destdir_old.ctime.nseconds != p_attr_destdir_new.ctime.nseconds)
+			|| (p_attr_destdir_old.mtime.seconds  != p_attr_destdir_new.mtime.seconds)
+			|| (p_attr_destdir_old.mtime.nseconds != p_attr_destdir_new.mtime.nseconds)
 		)
 		LogCrit(COMPONENT_FSAL, "Guessed destination directory attributes don't match with sync ones! Size: %llu vs %llu. Ctime: (%u.%u) vs (%u.%u). Mtime: (%u.%u) vs (%u.%u).",
-				p_attr_destdir->filesize,         p_attr_destdir_new.filesize,
-				p_attr_destdir->ctime.seconds,    p_attr_destdir->ctime.nseconds,
-				p_attr_destdir_new.ctime.seconds, p_attr_destdir_new.ctime.nseconds,
-				p_attr_destdir->mtime.seconds,    p_attr_destdir->mtime.nseconds,
-				p_attr_destdir_new.mtime.seconds, p_attr_destdir_new.mtime.nseconds
+				p_attr_destdir_old.filesize,         p_attr_destdir_new.filesize,
+				p_attr_destdir_old.ctime.seconds,    p_attr_destdir_old.ctime.nseconds,
+				p_attr_destdir_new.ctime.seconds,    p_attr_destdir_new.ctime.nseconds,
+				p_attr_destdir_old.mtime.seconds,    p_attr_destdir_old.mtime.nseconds,
+				p_attr_destdir_new.mtime.seconds,    p_attr_destdir_new.mtime.nseconds
 				);
 
 	/* Guessed object attributes should match with sync ones */
