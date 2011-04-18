@@ -131,17 +131,17 @@ fsal_status_t XFSFSAL_setattr_access(xfsfsal_op_context_t * p_context,  /* IN */
  *        - ERR_FSAL_SERVERFAULT  (unexpected error)
  */
 
-fsal_status_t XFSFSAL_rename_access(xfsfsal_op_context_t * pcontext,    /* IN */
-                                    fsal_attrib_list_t * pattrsrc,      /* IN */
-                                    fsal_attrib_list_t * pattrdest)     /* IN */
+fsal_status_t XFSFSAL_rename_access(xfsfsal_op_context_t * pcontext,  /* IN */
+                                      fsal_attrib_list_t * pattrsrc,  /* IN */
+                                      fsal_attrib_list_t * pattrdest) /* IN */
 {
   fsal_status_t fsal_status;
 
-  fsal_status = XFSFSAL_test_access(pcontext, FSAL_W_OK, pattrsrc);
+  fsal_status = XFSFSAL_test_access(pcontext, ( FSAL_W_OK | FSAL_X_OK ), pattrsrc);
   if(FSAL_IS_ERROR(fsal_status))
     Return(fsal_status.major, fsal_status.minor, INDEX_FSAL_rename_access);
 
-  fsal_status = XFSFSAL_test_access(pcontext, FSAL_W_OK, pattrdest);
+  fsal_status = XFSFSAL_test_access(pcontext, ( FSAL_W_OK | FSAL_X_OK ), pattrdest);
   if(FSAL_IS_ERROR(fsal_status))
     Return(fsal_status.major, fsal_status.minor, INDEX_FSAL_rename_access);
 
