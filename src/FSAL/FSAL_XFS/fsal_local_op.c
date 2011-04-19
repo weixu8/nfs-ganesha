@@ -209,6 +209,7 @@ fsal_status_t XFSFSAL_unlink_access(xfsfsal_op_context_t * pcontext,    /* IN */
  * test if a client identified by cred can link to a directory knowing its attributes
  *
  * \param pcontext   (in fsal_cred_t *) user's context.
+ * \param pattrsrc   source directory attributes
  * \param pattrdest  destination directory attributes
  *
  * \return Major error codes :
@@ -220,9 +221,14 @@ fsal_status_t XFSFSAL_unlink_access(xfsfsal_op_context_t * pcontext,    /* IN */
  */
 
 fsal_status_t XFSFSAL_link_access(xfsfsal_op_context_t * pcontext,  /* IN */
+                                    fsal_attrib_list_t * pattrsrc,  /* IN */
                                     fsal_attrib_list_t * pattrdest) /* IN */
 {
   fsal_status_t fsal_status;
+
+  fsal_status = XFSFSAL_test_access(pcontext, ( FSAL_X_OK ), pattrsrc);
+  if(FSAL_IS_ERROR(fsal_status))
+    Return(fsal_status.major, fsal_status.minor, INDEX_FSAL_link_access);
 
   fsal_status = XFSFSAL_test_access(pcontext, ( FSAL_W_OK | FSAL_X_OK ), pattrdest);
   if(FSAL_IS_ERROR(fsal_status))

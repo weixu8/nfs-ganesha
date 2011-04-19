@@ -212,8 +212,9 @@ fsal_status_t ZFSFSAL_create_access(zfsfsal_op_context_t * pcontext,    /* IN */
 fsal_status_t ZFSFSAL_unlink_access(zfsfsal_op_context_t * pcontext,    /* IN */
                                     fsal_attrib_list_t * pattr) /* IN */ ;
 
-fsal_status_t ZFSFSAL_link_access(zfsfsal_op_context_t * pcontext,      /* IN */
-                                  fsal_attrib_list_t * pattr) /* IN */ ;
+fsal_status_t ZFSFSAL_link_access(zfsfsal_op_context_t * pcontext,  /* IN */
+                                  fsal_attrib_list_t   * pattrsrc,  /* IN */
+                                  fsal_attrib_list_t   * pattrdest) /* IN */ ;
 
 fsal_status_t ZFSFSAL_merge_attrs(fsal_attrib_list_t * pinit_attr,
                                   fsal_attrib_list_t * pnew_attr,

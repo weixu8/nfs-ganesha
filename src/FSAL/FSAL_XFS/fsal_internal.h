@@ -270,8 +270,9 @@ fsal_status_t XFSFSAL_create_access(xfsfsal_op_context_t * pcontext,    /* IN */
 fsal_status_t XFSFSAL_unlink_access(xfsfsal_op_context_t * pcontext,    /* IN */
                                     fsal_attrib_list_t * pattr) /* IN */ ;
 
-fsal_status_t XFSFSAL_link_access(xfsfsal_op_context_t * pcontext,      /* IN */
-                                  fsal_attrib_list_t * pattr) /* IN */ ;
+fsal_status_t XFSFSAL_link_access(xfsfsal_op_context_t * pcontext,  /* IN */
+                                  fsal_attrib_list_t   * pattrsrc,  /* IN */
+				  fsal_attrib_list_t   * pattrdest) /* IN */ ;
 
 fsal_status_t XFSFSAL_merge_attrs(fsal_attrib_list_t * pinit_attr,
                                   fsal_attrib_list_t * pnew_attr,

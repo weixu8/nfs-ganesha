@@ -177,13 +177,13 @@ fsal_status_t MFSL_setattrs(mfsl_object_t * filehandle, /* IN */
 			    void * pextra
     );
 
-fsal_status_t MFSL_link(mfsl_object_t * target_handle,  /* IN */
-                        mfsl_object_t * dir_handle,     /* IN */
-                        fsal_name_t * p_link_name,      /* IN */
-                        fsal_op_context_t * p_context,  /* IN */
-                        mfsl_context_t * p_mfsl_context,        /* IN */
+fsal_status_t MFSL_link(mfsl_object_t      * target_handle,  /* IN */
+                        mfsl_object_t      * dir_handle,     /* IN */
+                        fsal_name_t        * p_link_name,    /* IN */
+                        fsal_op_context_t  * p_context,      /* IN */
+                        mfsl_context_t     * p_mfsl_context, /* IN */
                         fsal_attrib_list_t * attributes,     /* [ IN/OUT ] */
-			void * pextra
+			void               * pextra
     );
 
 fsal_status_t MFSL_opendir(mfsl_object_t * dir_handle,  /* IN */

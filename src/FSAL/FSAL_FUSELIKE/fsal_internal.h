@@ -240,8 +240,9 @@ fsal_status_t FUSEFSAL_create_access(fusefsal_op_context_t * pcontext,  /* IN */
 fsal_status_t FUSEFSAL_unlink_access(fusefsal_op_context_t * pcontext,  /* IN */
                                      fsal_attrib_list_t * pattr) /* IN */ ;
 
-fsal_status_t FUSEFSAL_link_access(fusefsal_op_context_t * pcontext,    /* IN */
-                                   fsal_attrib_list_t * pattr) /* IN */ ;
+fsal_status_t FUSEFSAL_link_access(fusefsal_op_context_t * pcontext,   /* IN */
+                                   fsal_attrib_list_t    * pattrsrc,   /* IN */
+				   fsal_attrib_list_t    * pattrdest); /* IN */
 
 fsal_status_t FUSEFSAL_merge_attrs(fsal_attrib_list_t * pinit_attr,
                                    fsal_attrib_list_t * pnew_attr,
