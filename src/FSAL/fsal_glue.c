@@ -346,52 +346,75 @@ fsal_status_t FSAL_terminate()
   return fsal_functions.fsal_terminate();
 }
 
-fsal_status_t FSAL_test_access(fsal_op_context_t * p_context,   /* IN */
-                               fsal_accessflags_t access_type,  /* IN */
+/* Check access rights locally. 
+ * Use default access functions if the FSAL doesn't have ones 
+ */
+fsal_status_t FSAL_test_access(fsal_op_context_t  * p_context,          /* IN */
+                               fsal_accessflags_t   access_type,        /* IN */
                                fsal_attrib_list_t * p_object_attributes /* IN */ )
 {
-  return fsal_functions.fsal_test_access(p_context, access_type, p_object_attributes);
+	if(!fsal_functions.fsal_test_access)
+		return FSAL_test_access_default(p_context, access_type, p_object_attributes);
+
+	return fsal_functions.fsal_test_access(p_context, access_type, p_object_attributes);
 }
 
-fsal_status_t FSAL_setattr_access(fsal_op_context_t * p_context,        /* IN */
-                                  fsal_attrib_list_t * candidate_attributes,    /* IN */
-                                  fsal_attrib_list_t * object_attributes /* IN */ )
+fsal_status_t FSAL_setattr_access(fsal_op_context_t  * p_context,            /* IN */
+                                  fsal_attrib_list_t * candidate_attributes, /* IN */
+                                  fsal_attrib_list_t * object_attributes     /* IN */ )
 {
-  return fsal_functions.fsal_setattr_access(p_context, candidate_attributes,
-                                            object_attributes);
+	if(!fsal_functions.fsal_setattr_access)
+		return FSAL_setattr_access_default(p_context, candidate_attributes, object_attributes);
+
+	return fsal_functions.fsal_setattr_access(p_context, candidate_attributes, object_attributes);
 }
 
-fsal_status_t FSAL_rename_access(fsal_op_context_t * pcontext,  /* IN */
-                                 fsal_attrib_list_t * pattrsrc, /* IN */
-                                 fsal_attrib_list_t * pattrdest)        /* IN */
+fsal_status_t FSAL_rename_access(fsal_op_context_t  * pcontext,  /* IN */
+                                 fsal_attrib_list_t * pattrsrc,  /* IN */
+                                 fsal_attrib_list_t * pattrdest) /* IN */
 {
-  return fsal_functions.fsal_rename_access(pcontext, pattrsrc, pattrdest);
+	if(!fsal_functions.fsal_rename_access)
+		return FSAL_rename_access_default(pcontext, pattrsrc, pattrdest);
+
+	return fsal_functions.fsal_rename_access(pcontext, pattrsrc, pattrdest);
 }
 
-fsal_status_t FSAL_create_access(fsal_op_context_t * pcontext,  /* IN */
+fsal_status_t FSAL_create_access(fsal_op_context_t  * pcontext, /* IN */
                                  fsal_attrib_list_t * pattr)    /* IN */
 {
-  return fsal_functions.fsal_create_access(pcontext, pattr);
+	if(!fsal_functions.fsal_create_access)
+		return FSAL_create_access_default(pcontext, pattr);
+
+	return fsal_functions.fsal_create_access(pcontext, pattr);
 }
 
-fsal_status_t FSAL_unlink_access(fsal_op_context_t * pcontext,  /* IN */
+fsal_status_t FSAL_unlink_access(fsal_op_context_t  * pcontext, /* IN */
                                  fsal_attrib_list_t * pattr)    /* IN */
 {
-  return fsal_functions.fsal_unlink_access(pcontext, pattr);
+	if(!fsal_functions.fsal_unlink_access)
+		return FSAL_unlink_access_default(pcontext, pattr);
+
+	return fsal_functions.fsal_unlink_access(pcontext, pattr);
 }
 
 fsal_status_t FSAL_link_access(fsal_op_context_t  * pcontext,  /* IN */
                                fsal_attrib_list_t * pattrsrc,  /* IN */
 			       fsal_attrib_list_t * pattrdest) /* IN */
 {
-  return fsal_functions.fsal_link_access(pcontext, pattrsrc, pattrdest);
+	if(!fsal_functions.fsal_link_access)
+		return FSAL_link_access_default(pcontext, pattrsrc, pattrdest);
+
+	return fsal_functions.fsal_link_access(pcontext, pattrsrc, pattrdest);
 }
 
 fsal_status_t FSAL_merge_attrs(fsal_attrib_list_t * pinit_attr,
                                fsal_attrib_list_t * pnew_attr,
                                fsal_attrib_list_t * presult_attr)
 {
-  return fsal_functions.fsal_merge_attrs(pinit_attr, pnew_attr, presult_attr);
+	if(!fsal_functions.fsal_merge_attrs)
+		return FSAL_merge_attrs_default(pinit_attr, pnew_attr, presult_attr);
+
+	return fsal_functions.fsal_merge_attrs(pinit_attr, pnew_attr, presult_attr);
 }
 
 fsal_status_t FSAL_lookup(fsal_handle_t * p_parent_directory_handle,    /* IN */

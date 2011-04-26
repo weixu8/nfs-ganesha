@@ -2,13 +2,14 @@ AM_CFLAGS                     = $(FSAL_CFLAGS) $(SEC_CFLAGS)
 
 noinst_LTLIBRARIES          = libfsalcommon.la
 
-libfsalcommon_la_SOURCES = fsal_strings.c          \
-                           fsal_errors.c           \
-                           fsal_convert.c          \
-                           fsal_glue.c             \
-                           ../include/fsal.h       \
-                           ../include/fsal_types.h \
-                           ../include/err_fsal.h   \
+libfsalcommon_la_SOURCES = fsal_strings.c            \
+                           fsal_errors.c             \
+                           fsal_convert.c            \
+                           fsal_glue.c               \
+                           fsal_access.c             \
+                           ../include/fsal.h         \
+                           ../include/fsal_types.h   \
+                           ../include/err_fsal.h     \
                            ../include/fsal_convert.h 
 
 if USE_FSAL_GHOSTFS

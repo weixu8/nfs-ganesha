@@ -257,56 +257,6 @@ fsal_status_t WRAP_ZFSFSAL_terminate()
   return ZFSFSAL_terminate();
 }
 
-fsal_status_t WRAP_ZFSFSAL_test_access(fsal_op_context_t * p_context,   /* IN */
-                                       fsal_accessflags_t access_type,  /* IN */
-                                       fsal_attrib_list_t * p_object_attributes /* IN */ )
-{
-  return ZFSFSAL_test_access((zfsfsal_op_context_t *) p_context, access_type,
-                             p_object_attributes);
-}
-
-fsal_status_t WRAP_ZFSFSAL_setattr_access(fsal_op_context_t * p_context,        /* IN */
-                                          fsal_attrib_list_t * candidate_attributes,    /* IN */
-                                          fsal_attrib_list_t *
-                                          object_attributes /* IN */ )
-{
-  return ZFSFSAL_setattr_access((zfsfsal_op_context_t *) p_context, candidate_attributes,
-                                object_attributes);
-}
-
-fsal_status_t WRAP_ZFSFSAL_rename_access(fsal_op_context_t * pcontext,  /* IN */
-                                         fsal_attrib_list_t * pattrsrc, /* IN */
-                                         fsal_attrib_list_t * pattrdest)        /* IN */
-{
-  return ZFSFSAL_rename_access((zfsfsal_op_context_t *) pcontext, pattrsrc, pattrdest);
-}
-
-fsal_status_t WRAP_ZFSFSAL_create_access(fsal_op_context_t * pcontext,  /* IN */
-                                         fsal_attrib_list_t * pattr)    /* IN */
-{
-  return ZFSFSAL_create_access((zfsfsal_op_context_t *) pcontext, pattr);
-}
-
-fsal_status_t WRAP_ZFSFSAL_unlink_access(fsal_op_context_t * pcontext,  /* IN */
-                                         fsal_attrib_list_t * pattr)    /* IN */
-{
-  return ZFSFSAL_unlink_access((zfsfsal_op_context_t *) pcontext, pattr);
-}
-
-fsal_status_t WRAP_ZFSFSAL_link_access(fsal_op_context_t  * pcontext,  /* IN */
-                                       fsal_attrib_list_t * pattrsrc,  /* IN */
-				       fsal_attrib_list_t * pattrdest) /* IN */
-{
-  return ZFSFSAL_link_access((zfsfsal_op_context_t *) pcontext, pattrsrc, pattrdest);
-}
-
-fsal_status_t WRAP_ZFSFSAL_merge_attrs(fsal_attrib_list_t * pinit_attr,
-                                       fsal_attrib_list_t * pnew_attr,
-                                       fsal_attrib_list_t * presult_attr)
-{
-  return ZFSFSAL_merge_attrs(pinit_attr, pnew_attr, presult_attr);
-}
-
 fsal_status_t WRAP_ZFSFSAL_lookup(fsal_handle_t * p_parent_directory_handle,    /* IN */
                                   fsal_name_t * p_filename,     /* IN */
                                   fsal_op_context_t * p_context,        /* IN */
@@ -689,13 +639,13 @@ fsal_functions_t fsal_zfs_functions = {
   .fsal_dynamic_fsinfo = WRAP_ZFSFSAL_dynamic_fsinfo,
   .fsal_init = WRAP_ZFSFSAL_Init,
   .fsal_terminate = WRAP_ZFSFSAL_terminate,
-  .fsal_test_access = WRAP_ZFSFSAL_test_access,
-  .fsal_setattr_access = WRAP_ZFSFSAL_setattr_access,
-  .fsal_rename_access = WRAP_ZFSFSAL_rename_access,
-  .fsal_create_access = WRAP_ZFSFSAL_create_access,
-  .fsal_unlink_access = WRAP_ZFSFSAL_unlink_access,
-  .fsal_link_access = WRAP_ZFSFSAL_link_access,
-  .fsal_merge_attrs = WRAP_ZFSFSAL_merge_attrs,
+  .fsal_test_access    = NULL, /* use default ones */
+  .fsal_setattr_access = NULL, /* use default ones */
+  .fsal_rename_access  = NULL, /* use default ones */
+  .fsal_create_access  = NULL, /* use default ones */
+  .fsal_unlink_access  = NULL, /* use default ones */
+  .fsal_link_access    = NULL, /* use default ones */
+  .fsal_merge_attrs    = NULL, /* use default ones */
   .fsal_lookup = WRAP_ZFSFSAL_lookup,
   .fsal_lookuppath = WRAP_ZFSFSAL_lookupPath,
   .fsal_lookupjunction = WRAP_ZFSFSAL_lookupJunction,
