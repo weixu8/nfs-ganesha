@@ -909,8 +909,9 @@ fsal_status_t FSAL_unlink_access(fsal_op_context_t * pcontext,  /* IN */
 fsal_status_t FSAL_create_access(fsal_op_context_t * pcontext,  /* IN */
                                  fsal_attrib_list_t * pattr);   /* IN */
 
-fsal_status_t FSAL_link_access(fsal_op_context_t * pcontext,    /* IN */
-                               fsal_attrib_list_t * pattr);     /* IN */
+fsal_status_t FSAL_link_access(fsal_op_context_t  * pcontext,   /* IN */
+                               fsal_attrib_list_t * pattrsrc,   /* IN */
+                               fsal_attrib_list_t * pattrdest); /* IN */
 
 /******************************************************
  *                Structure used to define a fsal
@@ -1101,8 +1102,9 @@ typedef struct fsal_functions__
                                       fsal_attrib_list_t * pattr) /* IN */ ;
 
   /* FSAL_link_access */
-  fsal_status_t(*fsal_link_access) (fsal_op_context_t * pcontext,       /* IN */
-                                    fsal_attrib_list_t * pattr) /* IN */ ;
+  fsal_status_t(*fsal_link_access) (fsal_op_context_t  * pcontext,  /* IN */
+                                    fsal_attrib_list_t * pattrsrc,  /* IN */
+                                    fsal_attrib_list_t * pattrdest) /* IN */ ;
 
   /* FSAL_merge_attrs */
   fsal_status_t(*fsal_merge_attrs) (fsal_attrib_list_t * pinit_attr,

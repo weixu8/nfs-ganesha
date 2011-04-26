@@ -305,10 +305,11 @@ fsal_status_t WRAP_PROXYFSAL_unlink_access(fsal_op_context_t * pcontext,        
   return PROXYFSAL_unlink_access((proxyfsal_op_context_t *) pcontext, pattr);
 }
 
-fsal_status_t WRAP_PROXYFSAL_link_access(fsal_op_context_t * pcontext,  /* IN */
-                                         fsal_attrib_list_t * pattr)    /* IN */
+fsal_status_t WRAP_PROXYFSAL_link_access(fsal_op_context_t  * pcontext,  /* IN */
+                                         fsal_attrib_list_t * pattrsrc,  /* IN */
+                                         fsal_attrib_list_t * pattrdest) /* IN */
 {
-  return PROXYFSAL_link_access((proxyfsal_op_context_t *) pcontext, pattr);
+  return PROXYFSAL_link_access((proxyfsal_op_context_t *) pcontext, pattrsrc, pattrdest);
 }
 
 fsal_status_t WRAP_PROXYFSAL_merge_attrs(fsal_attrib_list_t * pinit_attr,

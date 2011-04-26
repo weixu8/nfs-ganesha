@@ -311,10 +311,11 @@ fsal_status_t WRAP_GPFSFSAL_unlink_access(fsal_op_context_t * pcontext,  /* IN *
   return GPFSFSAL_unlink_access((gpfsfsal_op_context_t *) pcontext, pattr);
 }
 
-fsal_status_t WRAP_GPFSFSAL_link_access(fsal_op_context_t * pcontext,    /* IN */
-                                       fsal_attrib_list_t * pattr)      /* IN */
+fsal_status_t WRAP_GPFSFSAL_link_access(fsal_op_context_t  * pcontext,  /* IN */
+                                        fsal_attrib_list_t * pattrsrc,  /* IN */
+					fsal_attrib_list_t * pattrdest) /* IN */
 {
-  return GPFSFSAL_link_access((gpfsfsal_op_context_t *) pcontext, pattr);
+  return GPFSFSAL_link_access((gpfsfsal_op_context_t *) pcontext, pattrsrc, pattrdest);
 }
 
 fsal_status_t WRAP_GPFSFSAL_merge_attrs(fsal_attrib_list_t * pinit_attr,

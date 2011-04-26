@@ -91,6 +91,10 @@ cache_inode_status_t cache_inode_link(cache_entry_t * pentry_src,
   fsal_attrib_list_t link_attributes;
 #ifdef _USE_MFSL
   fsal_attrib_list_t dirdest_attributes;
+#ifdef _USE_MFSL_ASYNC2
+  fsal_attrib_list_t dirsrc_attributes;
+  mfsl_dirs_attributes_t dirs_attrs;
+#endif /* _USE_MFSL_ASYNC2 */
 #endif
   cache_inode_status_t status;
   cache_entry_t *pentry_lookup = NULL;
@@ -233,13 +237,22 @@ cache_inode_status_t cache_inode_link(cache_entry_t * pentry_src,
 #ifdef _USE_MFSL
   cache_inode_get_attributes(pentry_src, &link_attributes);
   cache_inode_get_attributes(pentry_dir_dest, &dirdest_attributes);
+#ifdef _USE_MFSL_ASYNC2
+  cache_inode_get_attributes(pentry_src->parent_list->parent, &dirsrc_attributes);
+  dirs_attrs.src_dir_attrs  = &dirsrc_attributes;
+  dirs_attrs.dest_dir_attrs = &dirdest_attributes;
+  fsal_status =
+      MFSL_link(&pentry_src->mobject, &pentry_dir_dest->mobject, plink_name, pcontext,
+                &pclient->mfsl_context, &link_attributes, &dirs_attrs);
+#else /* _USE_MFSL_ASYNC2 */
   fsal_status =
       MFSL_link(&pentry_src->mobject, &pentry_dir_dest->mobject, plink_name, pcontext,
                 &pclient->mfsl_context, &link_attributes, NULL);
-#else
+#endif /* _USE_MFSL_ASYNC2 */
+#else /* _USE_MFSL */
   fsal_status =
       FSAL_link(&handle_src, &handle_dest, plink_name, pcontext, &link_attributes);
-#endif
+#endif /* _USE_MFSL */
   if(FSAL_IS_ERROR(fsal_status))
     {
       *pstatus = cache_inode_error_convert(fsal_status);

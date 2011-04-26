@@ -281,8 +281,9 @@ fsal_status_t GPFSFSAL_create_access(gpfsfsal_op_context_t * pcontext,    /* IN 
 fsal_status_t GPFSFSAL_unlink_access(gpfsfsal_op_context_t * pcontext,    /* IN */
                                     fsal_attrib_list_t * pattr) /* IN */ ;
 
-fsal_status_t GPFSFSAL_link_access(gpfsfsal_op_context_t * pcontext,      /* IN */
-                                  fsal_attrib_list_t * pattr) /* IN */ ;
+fsal_status_t GPFSFSAL_link_access(gpfsfsal_op_context_t * pcontext,  /* IN */
+                                   fsal_attrib_list_t    * pattrsrc,  /* IN */
+				   fsal_attrib_list_t    * pattrdest) /* IN */ ;
 
 fsal_status_t GPFSFSAL_merge_attrs(fsal_attrib_list_t * pinit_attr,
                                   fsal_attrib_list_t * pnew_attr,

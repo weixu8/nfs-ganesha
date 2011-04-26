@@ -73,4 +73,10 @@ typedef struct mfsl_file__
   fsal_file_t fsal_file ;
 } mfsl_file_t ;
 
+typedef struct mfsl_dirs_attributes__
+{
+  fsal_attrib_list_t * src_dir_attrs;
+  fsal_attrib_list_t * dest_dir_attrs;
+} mfsl_dirs_attributes_t;
+
 #endif                          /* _MFSL_ASYNC2_TYPES_H */

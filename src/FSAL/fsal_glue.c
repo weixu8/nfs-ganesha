@@ -380,10 +380,11 @@ fsal_status_t FSAL_unlink_access(fsal_op_context_t * pcontext,  /* IN */
   return fsal_functions.fsal_unlink_access(pcontext, pattr);
 }
 
-fsal_status_t FSAL_link_access(fsal_op_context_t * pcontext,    /* IN */
-                               fsal_attrib_list_t * pattr)      /* IN */
+fsal_status_t FSAL_link_access(fsal_op_context_t  * pcontext,  /* IN */
+                               fsal_attrib_list_t * pattrsrc,  /* IN */
+			       fsal_attrib_list_t * pattrdest) /* IN */
 {
-  return fsal_functions.fsal_link_access(pcontext, pattr);
+  return fsal_functions.fsal_link_access(pcontext, pattrsrc, pattrdest);
 }
 
 fsal_status_t FSAL_merge_attrs(fsal_attrib_list_t * pinit_attr,

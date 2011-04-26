@@ -293,10 +293,11 @@ fsal_status_t WRAP_ZFSFSAL_unlink_access(fsal_op_context_t * pcontext,  /* IN */
   return ZFSFSAL_unlink_access((zfsfsal_op_context_t *) pcontext, pattr);
 }
 
-fsal_status_t WRAP_ZFSFSAL_link_access(fsal_op_context_t * pcontext,    /* IN */
-                                       fsal_attrib_list_t * pattr)      /* IN */
+fsal_status_t WRAP_ZFSFSAL_link_access(fsal_op_context_t  * pcontext,  /* IN */
+                                       fsal_attrib_list_t * pattrsrc,  /* IN */
+				       fsal_attrib_list_t * pattrdest) /* IN */
 {
-  return ZFSFSAL_link_access((zfsfsal_op_context_t *) pcontext, pattr);
+  return ZFSFSAL_link_access((zfsfsal_op_context_t *) pcontext, pattrsrc, pattrdest);
 }
 
 fsal_status_t WRAP_ZFSFSAL_merge_attrs(fsal_attrib_list_t * pinit_attr,
