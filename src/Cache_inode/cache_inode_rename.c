@@ -142,6 +142,9 @@ cache_inode_status_t cache_inode_rename(cache_entry_t * pentry_dirsrc,
   fsal_attrib_list_t attrlookup;
   fsal_attrib_list_t *pattrsrc;
   fsal_attrib_list_t *pattrdest;
+#ifdef _USE_MFSL_ASYNC2
+  fsal_attrib_list_t attr_old_obj; /* we will copy the object attributes and use it in MFSL_rename */
+#endif
   fsal_handle_t *phandle_dirsrc;
   fsal_handle_t *phandle_dirdest;
 
@@ -220,7 +223,13 @@ cache_inode_status_t cache_inode_rename(cache_entry_t * pentry_dirsrc,
 
       return *pstatus;
     }
-
+#ifdef _USE_MFSL_ASYNC2
+  else
+  {
+          /* source object does exist, we copy its attributes for later */
+	  memcpy((void *) &attr_old_obj, (void *) &attrlookup, sizeof(fsal_attrib_list_t));
+  }
+#endif
   /* Check if an object with the new name exists in the destination directory */
   if((pentry_lookup_dest = cache_inode_lookup_no_mutex(pentry_dirdest,
                                                        pnewname,
@@ -421,16 +430,25 @@ cache_inode_status_t cache_inode_rename(cache_entry_t * pentry_dirsrc,
    * the cache would be inconsistent !
    */
 #ifdef _USE_MFSL
+#ifdef _USE_MFSL_ASYNC2
+  fsal_status = MFSL_rename(&pentry_dirsrc->mobject,
+                            poldname,
+                            &pentry_dirdest->mobject,
+                            pnewname,
+                            pcontext, &pclient->mfsl_context, pattrsrc, pattrdest,
+			    &attr_old_obj);
+#else /* _USE_MFSL_ASYNC2 */
   fsal_status = MFSL_rename(&pentry_dirsrc->mobject,
                             poldname,
                             &pentry_dirdest->mobject,
                             pnewname,
                             pcontext, &pclient->mfsl_context, pattrsrc, pattrdest, NULL);
-#else
+#endif /* _USE_MFSL_ASYNC2 */
+#else /* _USE_MFSL */
   fsal_status = FSAL_rename(phandle_dirsrc,
                             poldname,
                             phandle_dirdest, pnewname, pcontext, pattrsrc, pattrdest);
-#endif
+#endif /* _USE_MFSL */
   if(FSAL_IS_ERROR(fsal_status))
     {
       *pstatus = cache_inode_error_convert(fsal_status);

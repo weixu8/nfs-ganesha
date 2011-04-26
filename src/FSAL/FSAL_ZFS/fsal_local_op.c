@@ -224,10 +224,21 @@ fsal_status_t ZFSFSAL_setattr_access(zfsfsal_op_context_t * p_context,        /*
  */
 
 fsal_status_t ZFSFSAL_rename_access(zfsfsal_op_context_t * pcontext,  /* IN */
-                                 fsal_attrib_list_t * pattrsrc, /* IN */
-                                 fsal_attrib_list_t * pattrdest)        /* IN */
+                                      fsal_attrib_list_t * pattrsrc,  /* IN */
+                                      fsal_attrib_list_t * pattrdest) /* IN */
 {
-  Return(ERR_FSAL_NOTSUPP, 0, INDEX_FSAL_rename_access);
+	fsal_status_t fsal_status;
+
+	fsal_status = ZFSFSAL_test_access(pcontext, ( FSAL_W_OK | FSAL_X_OK ), pattrsrc);
+	if(FSAL_IS_ERROR(fsal_status))
+		Return(fsal_status.major, fsal_status.minor, INDEX_FSAL_rename_access);
+
+	fsal_status = ZFSFSAL_test_access(pcontext, ( FSAL_W_OK | FSAL_X_OK ), pattrdest);
+	if(FSAL_IS_ERROR(fsal_status))
+		Return(fsal_status.major, fsal_status.minor, INDEX_FSAL_rename_access);
+
+	/* If this point is reached, then access is granted */
+	Return(ERR_FSAL_NO_ERROR, 0, INDEX_FSAL_rename_access);
 }                               /* FSAL_rename_access */
 
 /**

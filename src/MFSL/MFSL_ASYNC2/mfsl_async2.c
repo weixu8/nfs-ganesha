@@ -41,7 +41,6 @@
 #include "mfsl_types.h"
 #include "mfsl.h"
 #include "common_utils.h"
-#include "BuddyMalloc.h"
 
 /* We want to use memcpy() */
 #include <string.h>
@@ -503,21 +502,111 @@ fsal_status_t MFSL_symlink(mfsl_object_t * parent_directory_handle,     /* IN */
                       p_context, accessmode, &link_handle->handle, link_attributes);
 }                               /* MFSL_symlink */
 
-fsal_status_t MFSL_rename(mfsl_object_t * old_parentdir_handle, /* IN */
-                          fsal_name_t * p_old_name,     /* IN */
-                          mfsl_object_t * new_parentdir_handle, /* IN */
-                          fsal_name_t * p_new_name,     /* IN */
-                          fsal_op_context_t * p_context,        /* IN */
-                          mfsl_context_t * p_mfsl_context,      /* IN */
-                          fsal_attrib_list_t * src_dir_attributes,      /* [ IN/OUT ] */
-                          fsal_attrib_list_t * tgt_dir_attributes,       /* [ IN/OUT ] */
-			  void * pextra
+fsal_status_t MFSL_rename(mfsl_object_t      * old_parentdir_handle, /* IN */
+                          fsal_name_t        * p_old_name,           /* IN */
+                          mfsl_object_t      * new_parentdir_handle, /* IN */
+                          fsal_name_t        * p_new_name,           /* IN */
+                          fsal_op_context_t  * p_context,            /* IN */
+                          mfsl_context_t     * p_mfsl_context,       /* IN */
+                          fsal_attrib_list_t * psrc_dir_attributes,  /* [ IN/OUT ] */
+                          fsal_attrib_list_t * ptgt_dir_attributes,  /* [ IN/OUT ] */
+                          void               * pextra
     )
 {
-  return FSAL_rename(&old_parentdir_handle->handle,
+	fsal_status_t fsal_status;
+	fsal_status_t fsal_status2; /* Async status */
+
+	fsal_attrib_list_t attr_new_srcdir;
+	fsal_attrib_list_t attr_new_destdir;
+
+	int samedirs;
+
+	/* sanity checks */
+	if(!psrc_dir_attributes)
+	{
+		LogCrit(COMPONENT_FSAL, "psrc_dir_attributes should not be null!");
+		MFSL_return(ERR_FSAL_INVAL, 0);
+	}
+	if(!ptgt_dir_attributes)
+	{
+		LogCrit(COMPONENT_FSAL, "ptgt_dir_attributes should not be null!");
+		MFSL_return(ERR_FSAL_INVAL, 0);
+	}
+
+	if( (psrc_dir_attributes->type != FSAL_TYPE_DIR) || (ptgt_dir_attributes->type != FSAL_TYPE_DIR) )
+	{
+		LogCrit(COMPONENT_FSAL, "This should be a directory!");
+		MFSL_return(ERR_FSAL_INVAL, 0);
+	}
+
+	/* check access asyncly */
+	fsal_status2 = FSAL_rename_access(p_context, psrc_dir_attributes, ptgt_dir_attributes);
+
+	/** @todo check if error and return it */
+
+	/* guess source directory attributes */
+	memcpy((void *) &attr_new_srcdir, (void *) psrc_dir_attributes, sizeof(fsal_attrib_list_t));
+	attr_new_srcdir.ctime.seconds  = (fsal_uint_t) time(NULL);
+	attr_new_srcdir.ctime.nseconds = 0;
+	attr_new_srcdir.mtime.seconds  = attr_new_srcdir.ctime.seconds;
+	attr_new_srcdir.mtime.nseconds = 0;
+
+	/* guess destination directory attributes */
+	memcpy((void *) &attr_new_destdir, (void *) ptgt_dir_attributes, sizeof(fsal_attrib_list_t));
+	attr_new_destdir.ctime.seconds  = attr_new_srcdir.ctime.seconds;
+	attr_new_destdir.ctime.nseconds = 0;
+	attr_new_destdir.mtime.seconds  = attr_new_srcdir.ctime.seconds;
+	attr_new_destdir.mtime.nseconds = 0;
+
+	/* those directories' size change only if they're different */
+	samedirs = FSAL_handlecmp(&old_parentdir_handle->handle, &new_parentdir_handle->handle, &fsal_status);
+
+	if(FSAL_IS_ERROR(fsal_status))
+		MFSL_return(fsal_status.major, 0);
+
+	if(samedirs != 0)
+	{
+		/* different dirs */
+		attr_new_srcdir.filesize  -= 1;
+		attr_new_destdir.filesize += 1;
+	}
+
+	/* for the moment, rename syncly */
+	fsal_status = FSAL_rename(&old_parentdir_handle->handle,
                      p_old_name,
                      &new_parentdir_handle->handle,
-                     p_new_name, p_context, src_dir_attributes, tgt_dir_attributes);
+                     p_new_name, p_context, psrc_dir_attributes, ptgt_dir_attributes);
+
+	/* for the moment, check if guessed source directory attributes is ok */
+	if(                (attr_new_srcdir.ctime.seconds != psrc_dir_attributes->ctime.seconds)
+			|| (attr_new_srcdir.mtime.seconds != psrc_dir_attributes->mtime.seconds)
+			|| (attr_new_srcdir.filesize      != psrc_dir_attributes->filesize)
+			)
+		LogCrit(COMPONENT_FSAL, "Error, guessed source directory attributes don't match with real ones. \
+				ctime: (%u.%u) vs (%u.%u); mtime: (%u.%u) vs (%u.%u); filesize: %llu vs %llu.",
+				psrc_dir_attributes->ctime.seconds, psrc_dir_attributes->ctime.nseconds,
+				attr_new_srcdir.ctime.seconds, attr_new_srcdir.ctime.nseconds,
+				psrc_dir_attributes->mtime.seconds, psrc_dir_attributes->mtime.nseconds,
+				attr_new_srcdir.mtime.seconds, attr_new_srcdir.mtime.nseconds,
+				psrc_dir_attributes->filesize, attr_new_srcdir.filesize
+				);
+
+	/* for the moment, check if guessed destination directory attributes is ok */
+	if(                (attr_new_destdir.ctime.seconds != ptgt_dir_attributes->ctime.seconds)
+			|| (attr_new_destdir.mtime.seconds != ptgt_dir_attributes->mtime.seconds)
+			|| (attr_new_destdir.filesize      != ptgt_dir_attributes->filesize)
+			)
+		LogCrit(COMPONENT_FSAL, "Error, guessed source directory attributes don't match with real ones. \
+				ctime: (%u.%u) vs (%u.%u); mtime: (%u.%u) vs (%u.%u); filesize: %llu vs %llu.",
+				ptgt_dir_attributes->ctime.seconds, ptgt_dir_attributes->ctime.nseconds,
+				attr_new_destdir.ctime.seconds, attr_new_destdir.ctime.nseconds,
+				ptgt_dir_attributes->mtime.seconds, ptgt_dir_attributes->mtime.nseconds,
+				attr_new_destdir.mtime.seconds, attr_new_destdir.mtime.nseconds,
+				ptgt_dir_attributes->filesize, attr_new_destdir.filesize
+				);
+
+	/* for the moment, return sync status anyway */
+	return fsal_status;
 }                               /* MFSL_rename */
 
 fsal_status_t MFSL_unlink(mfsl_object_t * parentdir_handle,            /* IN */
