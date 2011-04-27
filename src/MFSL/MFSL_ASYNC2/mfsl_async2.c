@@ -615,7 +615,7 @@ fsal_status_t MFSL_unlink(mfsl_object_t * parentdir_handle,            /* IN */
                           fsal_op_context_t * p_context,               /* IN */
                           mfsl_context_t * p_mfsl_context,             /* IN */
                           fsal_attrib_list_t * p_parentdir_attributes, /* [IN/OUT ] */
-			  void * pextra
+			  void * pextra                                /* IN */
     )
 {
   fsal_status_t fsal_status;                       /* status when we unlink syncly */
@@ -624,28 +624,17 @@ fsal_status_t MFSL_unlink(mfsl_object_t * parentdir_handle,            /* IN */
   fsal_attrib_list_t * p_object_attributes;        /* object attributes; we have to see if it's a dir. */
 
   /* sanity check */
-  if(!p_context){
-  	  LogCrit(COMPONENT_FSAL, "p_context should not be NULL!");
+  if(!p_context || !p_parentdir_attributes || !pextra)
 	  MFSL_return(ERR_FSAL_INVAL, 0);
-  }
-  if(!p_parentdir_attributes){
-  	  LogCrit(COMPONENT_FSAL, "p_parentdir_attributes should not be NULL!");
-	  MFSL_return(ERR_FSAL_INVAL, 0);
-  }
-  if(!&object_handle->handle){
-  	  LogCrit(COMPONENT_FSAL, "object_handle should not be NULL!");
-	  MFSL_return(ERR_FSAL_INVAL, 0);
-  }
 
   /* populate a new attrib_list with parentdir_attributes and see if we can guess the new attribs  */
   memcpy(&parentdir_attributes_new, p_parentdir_attributes, sizeof(fsal_attrib_list_t));
 
+  /* get object attributes */
+  p_object_attributes = (fsal_attrib_list_t *) pextra;
+
   /* if it's a directory, there is 1 link less to its parent dir */
-#ifdef _USE_PROXY
-  if(object_handle->handle.data.object_type_reminder == FSAL_TYPE_DIR)
-#else
-  if(object_handle->handle.data.type == FSAL_TYPE_DIR)
-#endif
+  if(p_object_attributes->type == FSAL_TYPE_DIR)
 	  parentdir_attributes_new.numlinks -= 1;
 
 #ifdef _USE_PROXY
@@ -661,7 +650,7 @@ fsal_status_t MFSL_unlink(mfsl_object_t * parentdir_handle,            /* IN */
 
 
   /* check in cache for rights */
-  fsal_status2 = FSAL_unlink_access(p_context, p_parentdir_attributes);
+  fsal_status2 = FSAL_unlink_access(p_context, p_parentdir_attributes, p_object_attributes);
 
   /* check rights directly */
   fsal_status = FSAL_unlink(&parentdir_handle->handle,

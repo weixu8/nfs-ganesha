@@ -903,8 +903,9 @@ fsal_status_t FSAL_rename_access(fsal_op_context_t * pcontext,  /* IN */
                                  fsal_attrib_list_t * pattrsrc, /* IN */
                                  fsal_attrib_list_t * pattrdest);       /* IN */
 
-fsal_status_t FSAL_unlink_access(fsal_op_context_t * pcontext,  /* IN */
-                                 fsal_attrib_list_t * pattr);   /* IN */
+fsal_status_t FSAL_unlink_access(fsal_op_context_t * pcontext,   /* IN */
+                                 fsal_attrib_list_t * pattrsrc,  /* IN */
+				 fsal_attrib_list_t * pattrobj); /* IN */
 
 fsal_status_t FSAL_create_access(fsal_op_context_t * pcontext,  /* IN */
                                  fsal_attrib_list_t * pattr);   /* IN */
@@ -933,8 +934,9 @@ fsal_status_t FSAL_rename_access_default(fsal_op_context_t  * pcontext,   /* IN 
                                          fsal_attrib_list_t * pattrsrc,   /* IN */
                                          fsal_attrib_list_t * pattrdest); /* IN */
 
-fsal_status_t FSAL_unlink_access_default(fsal_op_context_t  * pcontext, /* IN */
-                                         fsal_attrib_list_t * pattr);   /* IN */
+fsal_status_t FSAL_unlink_access_default(fsal_op_context_t  * pcontext,  /* IN */
+                                         fsal_attrib_list_t * pattrsrc,  /* IN */
+					 fsal_attrib_list_t * pattrobj); /* IN */
 
 fsal_status_t FSAL_create_access_default(fsal_op_context_t  * pcontext, /* IN */
                                          fsal_attrib_list_t * pattr);   /* IN */
@@ -1129,8 +1131,9 @@ typedef struct fsal_functions__
                                       fsal_attrib_list_t * pattr) /* IN */ ;
 
   /* FSAL_unlink_access */
-  fsal_status_t(*fsal_unlink_access) (fsal_op_context_t * pcontext,     /* IN */
-                                      fsal_attrib_list_t * pattr) /* IN */ ;
+  fsal_status_t(*fsal_unlink_access) (fsal_op_context_t  * pcontext, /* IN */
+                                      fsal_attrib_list_t * pattrsrc, /* IN */
+                                      fsal_attrib_list_t * pattrobj) /* IN */ ;
 
   /* FSAL_link_access */
   fsal_status_t(*fsal_link_access) (fsal_op_context_t  * pcontext,  /* IN */

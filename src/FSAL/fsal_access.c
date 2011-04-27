@@ -281,8 +281,9 @@ fsal_status_t FSAL_create_access_default(fsal_op_context_t  * pcontext,  /* IN *
  * FSAL_unlink_access_default :
  * test if a client identified by cred can unlink on a directory knowing its attributes
  *
- * \param pcontext (in zfsfsal_cred_t *) user's context.
- * \param pattr      source directory attributes
+ * \param pcontext  user's context.
+ * \param pattrsrc  source directory attributes
+ * \param pattrobj  object attributes
  *
  * \return Major error codes :
  *        - ERR_FSAL_NO_ERROR     (no error)
@@ -291,12 +292,23 @@ fsal_status_t FSAL_create_access_default(fsal_op_context_t  * pcontext,  /* IN *
  *        - ERR_FSAL_INVAL        (missing attributes : mode, group, user,...)
  *        - ERR_FSAL_SERVERFAULT  (unexpected error)
  */
-fsal_status_t FSAL_unlink_access_default(zfsfsal_op_context_t * pcontext, /* IN */
-                                         fsal_attrib_list_t   * pattr)    /* IN */
+fsal_status_t FSAL_unlink_access_default(fsal_op_context_t  * pcontext, /* IN */
+                                         fsal_attrib_list_t * pattrsrc, /* IN */
+					 fsal_attrib_list_t * pattrobj) /* IN */
 {
   fsal_status_t fsal_status;
 
-  fsal_status = FSAL_test_access_default(pcontext, FSAL_W_OK, pattr);
+  /* Sticky Bit on the parent directory? */
+  if(pattrsrc->mode & FSAL_MODE_SVTX)
+  {
+          /* The user must own the file or the parent directory. */
+	  if(    ( pattrsrc->owner != FSAL_OP_CONTEXT_TO_UID(pcontext) )
+              || ( pattrobj->owner != FSAL_OP_CONTEXT_TO_UID(pcontext) ) )
+		  Return(ERR_FSAL_ACCESS, 0, INDEX_FSAL_unlink_access);
+  }
+
+  /* The user must be able to lookup and write the parent directory */
+  fsal_status = FSAL_test_access_default(pcontext, ( FSAL_W_OK | FSAL_X_OK ), pattrsrc);
   if(FSAL_IS_ERROR(fsal_status))
     Return(fsal_status.major, fsal_status.minor, INDEX_FSAL_unlink_access);
 
