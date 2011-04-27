@@ -913,6 +913,37 @@ fsal_status_t FSAL_link_access(fsal_op_context_t  * pcontext,   /* IN */
                                fsal_attrib_list_t * pattrsrc,   /* IN */
                                fsal_attrib_list_t * pattrdest); /* IN */
 
+/* The following functions are used by default by FSAL_glue if the FSAL doesn't provide it */
+
+fsal_status_t FSAL_test_access_default(fsal_op_context_t  * p_context,        /* IN */
+                                       fsal_accessflags_t   access_type,      /* IN */
+                                       fsal_attrib_list_t * object_attributes /* IN */
+    );
+
+fsal_status_t FSAL_setattr_access_default(fsal_op_context_t * p_context,        /* IN */
+                                          fsal_attrib_list_t * candidate_attributes,    /* IN */
+                                          fsal_attrib_list_t * object_attributes        /* IN */
+    );
+
+fsal_status_t FSAL_merge_attrs_default(fsal_attrib_list_t * pinit_attr,    /* IN */
+                                       fsal_attrib_list_t * pnew_attr,     /* IN */
+                                       fsal_attrib_list_t * presult_attr); /* OUT */
+
+fsal_status_t FSAL_rename_access_default(fsal_op_context_t  * pcontext,   /* IN */
+                                         fsal_attrib_list_t * pattrsrc,   /* IN */
+                                         fsal_attrib_list_t * pattrdest); /* IN */
+
+fsal_status_t FSAL_unlink_access_default(fsal_op_context_t  * pcontext, /* IN */
+                                         fsal_attrib_list_t * pattr);   /* IN */
+
+fsal_status_t FSAL_create_access_default(fsal_op_context_t  * pcontext, /* IN */
+                                         fsal_attrib_list_t * pattr);   /* IN */
+
+fsal_status_t FSAL_link_access_default(fsal_op_context_t  * pcontext,   /* IN */
+                                       fsal_attrib_list_t * pattrsrc,   /* IN */
+                                       fsal_attrib_list_t * pattrdest); /* IN */
+
+
 /******************************************************
  *                Structure used to define a fsal
  ******************************************************/
