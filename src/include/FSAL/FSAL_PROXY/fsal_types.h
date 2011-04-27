@@ -154,6 +154,8 @@ typedef struct fsal_op_context__
 
 #define FSAL_OP_CONTEXT_TO_UID( pcontext ) ( pcontext->user_credential.user )
 #define FSAL_OP_CONTEXT_TO_GID( pcontext ) ( pcontext->user_credential.group )
+#define FSAL_OP_CONTEXT_TO_NBGROUPS( pcontext ) ( pcontext->user_credential.nbgroups )
+#define FSAL_OP_CONTEXT_TO_ALT_GROUPS( pcontext ) ( pcontext->user_credential.alt_groups )
 
 typedef struct fsal_dir__
 {

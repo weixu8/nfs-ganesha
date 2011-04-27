@@ -149,6 +149,8 @@ typedef struct
 
 #define FSAL_OP_CONTEXT_TO_UID( pcontext ) ( pcontext->credential.user )
 #define FSAL_OP_CONTEXT_TO_GID( pcontext ) ( pcontext->credential.group )
+#define FSAL_OP_CONTEXT_TO_NBGROUPS( pcontext ) ( pcontext->credential.nbgroups )
+#define FSAL_OP_CONTEXT_TO_ALT_GROUPS( pcontext ) ( pcontext->credential.alt_groups )
 
 typedef struct fs_specific_initinfo__
 {

@@ -136,6 +136,7 @@ typedef struct
 
 #define FSAL_OP_CONTEXT_TO_UID( pcontext ) ( pcontext->credential.user )
 #define FSAL_OP_CONTEXT_TO_GID( pcontext ) ( pcontext->credential.group )
+#define FSAL_NOT_SUPPORTED_ALT_GROUPS
 /* Directory stream descriptor. */
 
 typedef struct fsal_dir__

@@ -107,8 +107,14 @@ typedef struct fsal_op_context__
 
 } zfsfsal_op_context_t;
 
-#define FSAL_OP_CONTEXT_TO_UID( pcontext ) ( pcontext->credential.cred.uid )
-#define FSAL_OP_CONTEXT_TO_GID( pcontext ) ( pcontext->credential.cred.gid )
+#define FSAL_OP_CONTEXT_TO_UID( pcontext ) ( pcontext->user_credential.cred.uid )
+#define FSAL_OP_CONTEXT_TO_GID( pcontext ) ( pcontext->user_credential.cred.gid )
+
+/* how to return a gid_t[32] in a macro?
+#define FSAL_OP_CONTEXT_TO_NBGROUPS( pcontext ) ( (fsal_count_t) 0 )
+#define FSAL_OP_CONTEXT_TO_ALT_GROUPS( pcontext ) ( (gid_t) {-1} )
+*/
+#define FSAL_NOT_SUPPORTED_ALT_GROUPS
 
 typedef struct fsal_dir__
 {

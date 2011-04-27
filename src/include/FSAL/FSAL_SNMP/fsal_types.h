@@ -135,8 +135,9 @@ typedef struct fsal_op_context__
 
 } snmpfsal_op_context_t;
 
-#define FSAL_OP_CONTEXT_TO_UID( pcontext ) ( pcontext->credential.user )
-#define FSAL_OP_CONTEXT_TO_GID( pcontext ) ( pcontext->credential.group )
+#define FSAL_OP_CONTEXT_TO_UID( pcontext ) ( pcontext->user_credential.user )
+#define FSAL_OP_CONTEXT_TO_GID( pcontext ) ( pcontext->user_credential.group )
+#define FSAL_NOT_SUPPORTED_ALT_GROUPS
 
 typedef struct fsal_dir__
 {

@@ -86,6 +86,11 @@ fsal_status_t FSAL_test_access_default(fsal_op_context_t  * p_context,        /*
 {
   fsal_accessflags_t missing_access;
   int is_grp;
+#if !defined(FSAL_NOT_SUPPORTED_ALT_GROUPS)
+  fsal_count_t i;
+  gid_t alt_groups[FSAL_NGROUPS_MAX];
+  fsal_count_t nb_alt_groups;
+#endif
 
   /* sanity checks. */
 
@@ -133,10 +138,21 @@ fsal_status_t FSAL_test_access_default(fsal_op_context_t  * p_context,        /*
 
   is_grp = (FSAL_OP_CONTEXT_TO_GID(p_context) == object_attributes->group);
 
-  if(!is_grp)
+#if !defined(FSAL_NOT_SUPPORTED_ALT_GROUPS)
+  nb_alt_groups = FSAL_OP_CONTEXT_TO_NBGROUPS(pcontext);
+
+  if(!is_grp && nb_alt_groups != 0)
     {
-      /* >> Test here if file belongs to user's alt groups << */
+      /* Test if file belongs to user's alt groups */
+      alt_groups = FSAL_OP_CONTEXT_TO_ALT_GROUPS(pcontext);
+      for(i = 0; i < nb_alt_groups; i++)
+      {
+        is_grp = (alt_groups[i] == object_attributes->group);
+        if(is_grp)
+          break;
+      }
     }
+#endif
 
   /* finally apply group rights */
 
@@ -303,15 +319,15 @@ fsal_status_t FSAL_unlink_access_default(zfsfsal_op_context_t * pcontext, /* IN 
  *        - ERR_FSAL_INVAL        (missing attributes : mode, group, user,...)
  *        - ERR_FSAL_SERVERFAULT  (unexpected error)
  */
-
-fsal_status_t FSAL_link_access_default(fsal_op_context_t  * pcontext, /* IN */
-                                       fsal_attrib_list_t * pattr)    /* IN */
+fsal_status_t FSAL_link_access_default(fsal_op_context_t  * pcontext,  /* IN */
+                                       fsal_attrib_list_t * pattrsrc,  /* IN */
+                                       fsal_attrib_list_t * pattrdest) /* IN */
 {
   fsal_status_t fsal_status;
 
-  fsal_status = FSAL_test_access_default(pcontext, FSAL_W_OK, pattr);
+  fsal_status = FSAL_test_access_default(pcontext, FSAL_W_OK, pattrdest);
   if(FSAL_IS_ERROR(fsal_status))
-    Return(fsal_status.major, fsal_status.minor, INDEX_FSAL_unlink_access);
+    Return(fsal_status.major, fsal_status.minor, INDEX_FSAL_link_access);
 
   /* If this point is reached, then access is granted */
   Return(ERR_FSAL_NO_ERROR, 0, INDEX_FSAL_link_access);
