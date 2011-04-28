@@ -899,9 +899,10 @@ fsal_status_t FSAL_merge_attrs(fsal_attrib_list_t * pinit_attr, /* IN */
                                fsal_attrib_list_t * pnew_attr,  /* IN */
                                fsal_attrib_list_t * presult_attr);      /* OUT */
 
-fsal_status_t FSAL_rename_access(fsal_op_context_t * pcontext,  /* IN */
-                                 fsal_attrib_list_t * pattrsrc, /* IN */
-                                 fsal_attrib_list_t * pattrdest);       /* IN */
+fsal_status_t FSAL_rename_access(fsal_op_context_t * pcontext,   /* IN */
+                                 fsal_attrib_list_t * pattrsrc,  /* IN */
+                                 fsal_attrib_list_t * pattrdest, /* IN */
+				 fsal_attrib_list_t * pattrobj); /* IN */
 
 fsal_status_t FSAL_unlink_access(fsal_op_context_t * pcontext,   /* IN */
                                  fsal_attrib_list_t * pattrsrc,  /* IN */
@@ -930,9 +931,10 @@ fsal_status_t FSAL_merge_attrs_default(fsal_attrib_list_t * pinit_attr,    /* IN
                                        fsal_attrib_list_t * pnew_attr,     /* IN */
                                        fsal_attrib_list_t * presult_attr); /* OUT */
 
-fsal_status_t FSAL_rename_access_default(fsal_op_context_t  * pcontext,   /* IN */
-                                         fsal_attrib_list_t * pattrsrc,   /* IN */
-                                         fsal_attrib_list_t * pattrdest); /* IN */
+fsal_status_t FSAL_rename_access_default(fsal_op_context_t  * pcontext,  /* IN */
+                                         fsal_attrib_list_t * pattrsrc,  /* IN */
+                                         fsal_attrib_list_t * pattrdest, /* IN */
+                                         fsal_attrib_list_t * pattrobj); /* IN */
 
 fsal_status_t FSAL_unlink_access_default(fsal_op_context_t  * pcontext,  /* IN */
                                          fsal_attrib_list_t * pattrsrc,  /* IN */
@@ -1122,9 +1124,10 @@ typedef struct fsal_functions__
                                        fsal_attrib_list_t * object_attributes /* IN */ );
 
   /* FSAL_rename_access */
-  fsal_status_t(*fsal_rename_access) (fsal_op_context_t * pcontext,     /* IN */
-                                      fsal_attrib_list_t * pattrsrc,    /* IN */
-                                      fsal_attrib_list_t * pattrdest) /* IN */ ;
+  fsal_status_t(*fsal_rename_access) (fsal_op_context_t  * pcontext,  /* IN */
+                                      fsal_attrib_list_t * pattrsrc,  /* IN */
+                                      fsal_attrib_list_t * pattrdest, /* IN */
+                                      fsal_attrib_list_t * pattrobj); /* IN */
 
   /* FSAL_create_access */
   fsal_status_t(*fsal_create_access) (fsal_op_context_t * pcontext,     /* IN */

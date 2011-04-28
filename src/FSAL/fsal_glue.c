@@ -371,12 +371,13 @@ fsal_status_t FSAL_setattr_access(fsal_op_context_t  * p_context,            /* 
 
 fsal_status_t FSAL_rename_access(fsal_op_context_t  * pcontext,  /* IN */
                                  fsal_attrib_list_t * pattrsrc,  /* IN */
-                                 fsal_attrib_list_t * pattrdest) /* IN */
+                                 fsal_attrib_list_t * pattrdest, /* IN */
+                                 fsal_attrib_list_t * pattrobj)  /* IN */
 {
 	if(!fsal_functions.fsal_rename_access)
-		return FSAL_rename_access_default(pcontext, pattrsrc, pattrdest);
+		return FSAL_rename_access_default(pcontext, pattrsrc, pattrdest, pattrobj);
 
-	return fsal_functions.fsal_rename_access(pcontext, pattrsrc, pattrdest);
+	return fsal_functions.fsal_rename_access(pcontext, pattrsrc, pattrdest, pattrobj);
 }
 
 fsal_status_t FSAL_create_access(fsal_op_context_t  * pcontext, /* IN */

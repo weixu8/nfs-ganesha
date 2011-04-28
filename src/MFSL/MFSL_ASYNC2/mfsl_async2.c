@@ -510,7 +510,7 @@ fsal_status_t MFSL_rename(mfsl_object_t      * old_parentdir_handle, /* IN */
                           mfsl_context_t     * p_mfsl_context,       /* IN */
                           fsal_attrib_list_t * psrc_dir_attributes,  /* [ IN/OUT ] */
                           fsal_attrib_list_t * ptgt_dir_attributes,  /* [ IN/OUT ] */
-                          void               * pextra
+                          void               * pextra                /* IN */
     )
 {
 	fsal_status_t fsal_status;
@@ -518,20 +518,13 @@ fsal_status_t MFSL_rename(mfsl_object_t      * old_parentdir_handle, /* IN */
 
 	fsal_attrib_list_t attr_new_srcdir;
 	fsal_attrib_list_t attr_new_destdir;
+	fsal_attrib_list_t * attr_old_obj;
 
 	int samedirs;
 
 	/* sanity checks */
-	if(!psrc_dir_attributes)
-	{
-		LogCrit(COMPONENT_FSAL, "psrc_dir_attributes should not be null!");
-		MFSL_return(ERR_FSAL_INVAL, 0);
-	}
-	if(!ptgt_dir_attributes)
-	{
-		LogCrit(COMPONENT_FSAL, "ptgt_dir_attributes should not be null!");
-		MFSL_return(ERR_FSAL_INVAL, 0);
-	}
+	if(!psrc_dir_attributes || !ptgt_dir_attributes || !pextra)
+		MFSL_return(ERR_FSAL_FAULT, 0);
 
 	if( (psrc_dir_attributes->type != FSAL_TYPE_DIR) || (ptgt_dir_attributes->type != FSAL_TYPE_DIR) )
 	{
@@ -539,8 +532,11 @@ fsal_status_t MFSL_rename(mfsl_object_t      * old_parentdir_handle, /* IN */
 		MFSL_return(ERR_FSAL_INVAL, 0);
 	}
 
+	/* get object attributes */
+	attr_old_obj = pextra;
+
 	/* check access asyncly */
-	fsal_status2 = FSAL_rename_access(p_context, psrc_dir_attributes, ptgt_dir_attributes);
+	fsal_status2 = FSAL_rename_access(p_context, psrc_dir_attributes, ptgt_dir_attributes, attr_old_obj);
 
 	/** @todo check if error and return it */
 

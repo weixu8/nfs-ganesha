@@ -47,6 +47,11 @@
  */
 void fsal_increment_nbcall(int function_index, fsal_status_t status);
 
+/* static filesystem info.
+ * read access only.
+ */
+extern fsal_staticfsinfo_t global_fs_info;
+
 /**
  * FSAL_test_access_default :
  * Tests whether the user identified by the p_context structure
@@ -245,9 +250,44 @@ fsal_status_t FSAL_setattr_access_default(fsal_op_context_t  * p_context,       
 
 fsal_status_t FSAL_rename_access_default(fsal_op_context_t  * pcontext,  /* IN */
                                          fsal_attrib_list_t * pattrsrc,  /* IN */
-                                         fsal_attrib_list_t * pattrdest) /* IN */
+                                         fsal_attrib_list_t * pattrdest, /* IN */
+					 fsal_attrib_list_t * pattrobj)  /* IN */
 {
-  Return(ERR_FSAL_NOTSUPP, 0, INDEX_FSAL_rename_access);
+	fsal_status_t fsal_status;
+
+	if(!pcontext || !pattrsrc || !pattrdest || !pattrobj)
+		Return(ERR_FSAL_FAULT, 0, INDEX_FSAL_rename_access);
+
+	/* Sticky Bit on the parent directory? */
+	if(pattrsrc->mode & FSAL_MODE_SVTX)
+	{
+          /* The user must own the file or the parent directory. */
+	  if(    ( pattrsrc->owner != FSAL_OP_CONTEXT_TO_UID(pcontext) )
+              || ( pattrobj->owner != FSAL_OP_CONTEXT_TO_UID(pcontext) ) )
+		  Return(ERR_FSAL_ACCESS, 0, INDEX_FSAL_rename_access);
+	}
+
+	/* Sticky Bit on the destination directory? */
+	if(pattrdest->mode & FSAL_MODE_SVTX)
+	{
+          /* The user must own the file or the destination directory. */
+	  if(    ( pattrdest->owner != FSAL_OP_CONTEXT_TO_UID(pcontext) )
+              || ( pattrobj->owner != FSAL_OP_CONTEXT_TO_UID(pcontext) ) )
+		  Return(ERR_FSAL_ACCESS, 0, INDEX_FSAL_rename_access);
+	}
+
+	/* The user must be able to lookup and write the parent directory. */
+	fsal_status = FSAL_test_access_default(pcontext, ( FSAL_W_OK | FSAL_X_OK ), pattrsrc);
+	if(FSAL_IS_ERROR(fsal_status))
+		Return(fsal_status.major, fsal_status.minor, INDEX_FSAL_rename_access);
+
+	/* The user must be able to lookup and write the destination directory. */
+	fsal_status = FSAL_test_access_default(pcontext, ( FSAL_W_OK | FSAL_X_OK ), pattrdest);
+	if(FSAL_IS_ERROR(fsal_status))
+		Return(fsal_status.major, fsal_status.minor, INDEX_FSAL_rename_access);
+
+	/* If this point is reached, then access is granted */
+	Return(ERR_FSAL_NO_ERROR, 0, INDEX_FSAL_rename_access);
 }                               /* FSAL_rename_access */
 
 /**
@@ -339,7 +379,7 @@ fsal_status_t FSAL_link_access_default(fsal_op_context_t  * pcontext,  /* IN */
   fsal_status_t fsal_status;
 
   if(!global_fs_info.link_support)
-    Return(ERR_FSAL_NOTSUPP, 0 INDEX_FSAL_link_access);
+    Return(ERR_FSAL_NOTSUPP, 0, INDEX_FSAL_link_access);
 
   fsal_status = FSAL_test_access_default(pcontext, FSAL_X_OK, pattrsrc);
   if(FSAL_IS_ERROR(fsal_status))
