@@ -143,7 +143,8 @@ typedef struct
 #define FSAL_OP_CONTEXT_TO_GID( pcontext ) ( pcontext->credential.hpss_usercred.Gid )
 #endif
 
-#define FSAL_NOT_SUPPORTED_ALT_GROUPS
+#define FSAL_OP_CONTEXT_TO_NBGROUPS( pcontext ) ( (fsal_count_t) 0 )
+#define FSAL_OP_CONTEXT_TO_ALT_GROUPS( pcontext ) ( (gid_t *) NULL )
 
 /** directory stream descriptor */
 typedef struct fsal_dir__

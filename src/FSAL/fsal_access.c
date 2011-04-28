@@ -91,11 +91,9 @@ fsal_status_t FSAL_test_access_default(fsal_op_context_t  * p_context,        /*
 {
   fsal_accessflags_t missing_access;
   int is_grp;
-#if !defined(FSAL_NOT_SUPPORTED_ALT_GROUPS)
   fsal_count_t i;
-  gid_t alt_groups[FSAL_NGROUPS_MAX];
+  gid_t * alt_groups;
   fsal_count_t nb_alt_groups;
-#endif
 
   /* sanity checks. */
 
@@ -143,13 +141,12 @@ fsal_status_t FSAL_test_access_default(fsal_op_context_t  * p_context,        /*
 
   is_grp = (FSAL_OP_CONTEXT_TO_GID(p_context) == object_attributes->group);
 
-#if !defined(FSAL_NOT_SUPPORTED_ALT_GROUPS)
-  nb_alt_groups = FSAL_OP_CONTEXT_TO_NBGROUPS(pcontext);
-
-  if(!is_grp && nb_alt_groups != 0)
+  if(!is_grp && FSAL_OP_CONTEXT_TO_ALT_GROUPS(p_context) != NULL)
     {
+      nb_alt_groups = FSAL_OP_CONTEXT_TO_NBGROUPS(p_context);
+      alt_groups = FSAL_OP_CONTEXT_TO_ALT_GROUPS(p_context);
+
       /* Test if file belongs to user's alt groups */
-      alt_groups = FSAL_OP_CONTEXT_TO_ALT_GROUPS(pcontext);
       for(i = 0; i < nb_alt_groups; i++)
       {
         is_grp = (alt_groups[i] == object_attributes->group);
@@ -157,7 +154,6 @@ fsal_status_t FSAL_test_access_default(fsal_op_context_t  * p_context,        /*
           break;
       }
     }
-#endif
 
   /* finally apply group rights */
 
