@@ -321,8 +321,9 @@ fsal_status_t FSAL_unlink_access_default(fsal_op_context_t  * pcontext, /* IN */
  * FSAL_link_access_default :
  * test if a client identified by cred can link to a directory knowing its attributes
  *
- * \param pcontext (in fsal_cred_t *) user's context.
- * \param pattr      destination directory attributes
+ * \param pcontext   user's context.
+ * \param pattrsrc   source directory attributes
+ * \param pattrdest  destination directory attributes
  *
  * \return Major error codes :
  *        - ERR_FSAL_NO_ERROR     (no error)
@@ -337,7 +338,14 @@ fsal_status_t FSAL_link_access_default(fsal_op_context_t  * pcontext,  /* IN */
 {
   fsal_status_t fsal_status;
 
-  fsal_status = FSAL_test_access_default(pcontext, FSAL_W_OK, pattrdest);
+  if(!global_fs_info.link_support)
+    Return(ERR_FSAL_NOTSUPP, 0 INDEX_FSAL_link_access);
+
+  fsal_status = FSAL_test_access_default(pcontext, FSAL_X_OK, pattrsrc);
+  if(FSAL_IS_ERROR(fsal_status))
+    Return(fsal_status.major, fsal_status.minor, INDEX_FSAL_link_access);
+
+  fsal_status = FSAL_test_access_default(pcontext, ( FSAL_W_OK | FSAL_X_OK ), pattrdest);
   if(FSAL_IS_ERROR(fsal_status))
     Return(fsal_status.major, fsal_status.minor, INDEX_FSAL_link_access);
 
