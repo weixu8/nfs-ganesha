@@ -271,32 +271,6 @@ fsal_status_t PROXYFSAL_Init(fsal_parameter_t * init_info /* IN */ );
 
 fsal_status_t PROXYFSAL_terminate();
 
-fsal_status_t PROXYFSAL_test_access(proxyfsal_op_context_t * p_context, /* IN */
-                                    fsal_accessflags_t access_type,     /* IN */
-                                    fsal_attrib_list_t * p_object_attributes /* IN */ );
-
-fsal_status_t PROXYFSAL_setattr_access(proxyfsal_op_context_t * p_context,      /* IN */
-                                       fsal_attrib_list_t * candidate_attributes,       /* IN */
-                                       fsal_attrib_list_t * object_attributes /* IN */ );
-
-fsal_status_t PROXYFSAL_rename_access(proxyfsal_op_context_t * pcontext,        /* IN */
-                                      fsal_attrib_list_t * pattrsrc,    /* IN */
-                                      fsal_attrib_list_t * pattrdest) /* IN */ ;
-
-fsal_status_t PROXYFSAL_create_access(proxyfsal_op_context_t * pcontext,        /* IN */
-                                      fsal_attrib_list_t * pattr) /* IN */ ;
-
-fsal_status_t PROXYFSAL_unlink_access(proxyfsal_op_context_t * pcontext,        /* IN */
-                                      fsal_attrib_list_t * pattr) /* IN */ ;
-
-fsal_status_t PROXYFSAL_link_access(proxyfsal_op_context_t * pcontext,  /* IN */
-                                    fsal_attrib_list_t     * pattrsrc,  /* IN */
-                                    fsal_attrib_list_t     * pattrdest) /* IN */ ;
-
-fsal_status_t PROXYFSAL_merge_attrs(fsal_attrib_list_t * pinit_attr,
-                                    fsal_attrib_list_t * pnew_attr,
-                                    fsal_attrib_list_t * presult_attr);
-
 fsal_status_t PROXYFSAL_lookup(proxyfsal_handle_t * p_parent_directory_handle,  /* IN */
                                fsal_name_t * p_filename,        /* IN */
                                proxyfsal_op_context_t * p_context,      /* IN */

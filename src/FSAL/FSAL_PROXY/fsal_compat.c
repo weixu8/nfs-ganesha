@@ -267,58 +267,6 @@ fsal_status_t WRAP_PROXYFSAL_terminate()
   return PROXYFSAL_terminate();
 }
 
-fsal_status_t WRAP_PROXYFSAL_test_access(fsal_op_context_t * p_context, /* IN */
-                                         fsal_accessflags_t access_type,        /* IN */
-                                         fsal_attrib_list_t *
-                                         p_object_attributes /* IN */ )
-{
-  return PROXYFSAL_test_access((proxyfsal_op_context_t *) p_context, access_type,
-                               p_object_attributes);
-}
-
-fsal_status_t WRAP_PROXYFSAL_setattr_access(fsal_op_context_t * p_context,      /* IN */
-                                            fsal_attrib_list_t * candidate_attributes,  /* IN */
-                                            fsal_attrib_list_t *
-                                            object_attributes /* IN */ )
-{
-  return PROXYFSAL_setattr_access((proxyfsal_op_context_t *) p_context,
-                                  candidate_attributes, object_attributes);
-}
-
-fsal_status_t WRAP_PROXYFSAL_rename_access(fsal_op_context_t * pcontext,        /* IN */
-                                           fsal_attrib_list_t * pattrsrc,       /* IN */
-                                           fsal_attrib_list_t * pattrdest)      /* IN */
-{
-  return PROXYFSAL_rename_access((proxyfsal_op_context_t *) pcontext, pattrsrc,
-                                 pattrdest);
-}
-
-fsal_status_t WRAP_PROXYFSAL_create_access(fsal_op_context_t * pcontext,        /* IN */
-                                           fsal_attrib_list_t * pattr)  /* IN */
-{
-  return PROXYFSAL_create_access((proxyfsal_op_context_t *) pcontext, pattr);
-}
-
-fsal_status_t WRAP_PROXYFSAL_unlink_access(fsal_op_context_t * pcontext,        /* IN */
-                                           fsal_attrib_list_t * pattr)  /* IN */
-{
-  return PROXYFSAL_unlink_access((proxyfsal_op_context_t *) pcontext, pattr);
-}
-
-fsal_status_t WRAP_PROXYFSAL_link_access(fsal_op_context_t  * pcontext,  /* IN */
-                                         fsal_attrib_list_t * pattrsrc,  /* IN */
-                                         fsal_attrib_list_t * pattrdest) /* IN */
-{
-  return PROXYFSAL_link_access((proxyfsal_op_context_t *) pcontext, pattrsrc, pattrdest);
-}
-
-fsal_status_t WRAP_PROXYFSAL_merge_attrs(fsal_attrib_list_t * pinit_attr,
-                                         fsal_attrib_list_t * pnew_attr,
-                                         fsal_attrib_list_t * presult_attr)
-{
-  return PROXYFSAL_merge_attrs(pinit_attr, pnew_attr, presult_attr);
-}
-
 fsal_status_t WRAP_PROXYFSAL_lookup(fsal_handle_t * p_parent_directory_handle,  /* IN */
                                     fsal_name_t * p_filename,   /* IN */
                                     fsal_op_context_t * p_context,      /* IN */
@@ -702,13 +650,13 @@ fsal_functions_t fsal_proxy_functions = {
   .fsal_dynamic_fsinfo = WRAP_PROXYFSAL_dynamic_fsinfo,
   .fsal_init = WRAP_PROXYFSAL_Init,
   .fsal_terminate = WRAP_PROXYFSAL_terminate,
-  .fsal_test_access = WRAP_PROXYFSAL_test_access,
-  .fsal_setattr_access = WRAP_PROXYFSAL_setattr_access,
-  .fsal_rename_access = WRAP_PROXYFSAL_rename_access,
-  .fsal_create_access = WRAP_PROXYFSAL_create_access,
-  .fsal_unlink_access = WRAP_PROXYFSAL_unlink_access,
-  .fsal_link_access = WRAP_PROXYFSAL_link_access,
-  .fsal_merge_attrs = WRAP_PROXYFSAL_merge_attrs,
+  .fsal_test_access    = NULL,
+  .fsal_setattr_access = NULL,
+  .fsal_rename_access  = NULL,
+  .fsal_create_access  = NULL,
+  .fsal_unlink_access  = NULL,
+  .fsal_link_access    = NULL,
+  .fsal_merge_attrs    = NULL,
   .fsal_lookup = WRAP_PROXYFSAL_lookup,
   .fsal_lookuppath = WRAP_PROXYFSAL_lookupPath,
   .fsal_lookupjunction = WRAP_PROXYFSAL_lookupJunction,
