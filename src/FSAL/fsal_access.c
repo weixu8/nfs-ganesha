@@ -224,7 +224,102 @@ fsal_status_t FSAL_setattr_access_default(fsal_op_context_t  * p_context,       
                                           fsal_attrib_list_t * object_attributes     /* IN */
     )
 {
-  Return(ERR_FSAL_NOTSUPP, 0, INDEX_FSAL_setattr_access);
+	fsal_status_t fsal_status;
+
+	int in_grp;
+	int i;
+	fsal_count_t nb_alt_groups;
+	gid_t * alt_groups;
+
+	in_grp = 0;
+
+	/*
+	 * CHMOD
+	 * */
+
+	/* We just ignore symlinks. */
+	if(FSAL_TEST_MASK(candidate_attributes->asked_attributes, FSAL_ATTR_MODE) 
+	   && (object_attributes->type != FSAL_TYPE_LNK))
+	{
+		/* User must be root or owner of the file */
+		if( (FSAL_OP_CONTEXT_TO_UID(p_context) != 0) 
+		    && (FSAL_OP_CONTEXT_TO_UID(p_context) =! object_attributes->owner) )
+			Return(ERR_FSAL_ACCESS, 0, INDEX_FSAL_setattr_access);
+	}
+
+	/*
+	 * CHOWN
+	 * */
+
+	if(FSAL_TEST_MASK(candidate_attributes->asked_attributes, FSAL_ATTR_OWNER))
+	{
+		/* User must be root or (be the owner and the user he wants to set) */
+		if( (FSAL_OP_CONTEXT_TO_UID(p_context) != 0) 
+		    && ( ( FSAL_OP_CONTEXT_TO_UID(p_context) != object_attributes->owner ) 
+		    	   || ( FSAL_OP_CONTEXT_TO_UID(p_context) != candidate_attributes->owner ) ) )
+			Return(ERR_FSAL_ACCESS, 0, INDEX_FSAL_setattr_access);
+	}
+
+	if(FSAL_TEST_MASK(candidate_attributes->asked_attributes, FSAL_ATTR_GROUP))
+	{
+		/* User must ( be root or owner ) */
+		if( (FSAL_OP_CONTEXT_TO_UID(p_context) != 0) && (FSAL_OP_CONTEXT_TO_UID(p_context) != object_attributes->owner) )
+			Return(ERR_FSAL_ACCESS, 0, INDEX_FSAL_setattr_access);
+
+		/* He must also be in the group he wants to set */
+		in_grp = ( FSAL_OP_CONTEXT_TO_GID(p_context) == candidate_attributes->group );
+		
+		if(!in_grp && FSAL_OP_CONTEXT_TO_ALT_GROUPS(p_context) != NULL)
+		{
+			nb_alt_groups = FSAL_OP_CONTEXT_TO_NBGROUPS(p_context);
+			alt_groups = FSAL_OP_CONTEXT_TO_ALT_GROUPS(p_context);
+
+			/* Test user's alt groups */
+			for(i = 0; i < nb_alt_groups; i++)
+			{
+				in_grp = (alt_groups[i] == object_attributes->group);
+				if(in_grp)
+					break;
+			}
+		}
+
+		if(!in_grp)
+			Return(ERR_FSAL_ACCESS, 0, INDEX_FSAL_setattr_access);
+
+	}
+
+	/* 
+	 * UTIME 
+	 * */
+
+	/* Is it allowed to change time? */
+	if(FSAL_TEST_MASK(candidate_attributes->asked_attributes, 
+                          FSAL_ATTR_ATIME | FSAL_ATTR_CREATION | FSAL_ATTR_CTIME | FSAL_ATTR_MTIME)
+	   && global_fs_info.cansettime)
+		Return(ERR_FSAL_ACCESS, 0, INDEX_FSAL_setattr_access);
+
+	/* Atime: user must be owner or be root or have read access */
+	if( FSAL_TEST_MASK(candidate_attributes->asked_attributes, FSAL_ATTR_ATIME)
+	    && (FSAL_OP_CONTEXT_TO_UID(p_context) != 0)
+	    && (FSAL_OP_CONTEXT_TO_UID(p_context) != object_attributes->owner))
+	{
+		fsal_status = FSAL_test_access_default(p_context, FSAL_R_OK, object_attributes);
+		if(FSAL_IS_ERROR(fsal_status))
+			Return(ERR_FSAL_ACCESS, 0, INDEX_FSAL_setattr_access);
+	}
+
+	/* Mtime: user must be owner or be root or have write access */
+	if( FSAL_TEST_MASK(candidate_attributes->asked_attributes, FSAL_ATTR_MTIME)
+	    && (FSAL_OP_CONTEXT_TO_UID(p_context) != 0)
+	    && (FSAL_OP_CONTEXT_TO_UID(p_context) != object_attributes->owner))
+	{
+		fsal_status = FSAL_test_access_default(p_context, FSAL_W_OK, object_attributes);
+		if(FSAL_IS_ERROR(fsal_status))
+			Return(ERR_FSAL_ACCESS, 0, INDEX_FSAL_setattr_access);
+	}
+
+	/* If this point is reached, then access is granted. */
+	Return(ERR_FSAL_NO_ERROR, 0, INDEX_FSAL_setattr_access);
 }                               /* FSAL_test_setattr_access */
 
 /**
