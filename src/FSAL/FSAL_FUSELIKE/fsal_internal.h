@@ -222,32 +222,6 @@ fsal_status_t FUSEFSAL_Init(fsal_parameter_t * init_info /* IN */ );
 
 fsal_status_t FUSEFSAL_terminate();
 
-fsal_status_t FUSEFSAL_test_access(fusefsal_op_context_t * p_context,   /* IN */
-                                   fsal_accessflags_t access_type,      /* IN */
-                                   fsal_attrib_list_t * p_object_attributes /* IN */ );
-
-fsal_status_t FUSEFSAL_setattr_access(fusefsal_op_context_t * p_context,        /* IN */
-                                      fsal_attrib_list_t * candidate_attributes,        /* IN */
-                                      fsal_attrib_list_t * object_attributes /* IN */ );
-
-fsal_status_t FUSEFSAL_rename_access(fusefsal_op_context_t * pcontext,  /* IN */
-                                     fsal_attrib_list_t * pattrsrc,     /* IN */
-                                     fsal_attrib_list_t * pattrdest) /* IN */ ;
-
-fsal_status_t FUSEFSAL_create_access(fusefsal_op_context_t * pcontext,  /* IN */
-                                     fsal_attrib_list_t * pattr) /* IN */ ;
-
-fsal_status_t FUSEFSAL_unlink_access(fusefsal_op_context_t * pcontext,  /* IN */
-                                     fsal_attrib_list_t * pattr) /* IN */ ;
-
-fsal_status_t FUSEFSAL_link_access(fusefsal_op_context_t * pcontext,   /* IN */
-                                   fsal_attrib_list_t    * pattrsrc,   /* IN */
-				   fsal_attrib_list_t    * pattrdest); /* IN */
-
-fsal_status_t FUSEFSAL_merge_attrs(fsal_attrib_list_t * pinit_attr,
-                                   fsal_attrib_list_t * pnew_attr,
-                                   fsal_attrib_list_t * presult_attr);
-
 fsal_status_t FUSEFSAL_lookup(fusefsal_handle_t * p_parent_directory_handle,    /* IN */
                               fsal_name_t * p_filename, /* IN */
                               fusefsal_op_context_t * p_context,        /* IN */

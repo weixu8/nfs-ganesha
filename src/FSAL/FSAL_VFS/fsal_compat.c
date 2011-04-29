@@ -275,55 +275,6 @@ fsal_status_t WRAP_VFSFSAL_terminate()
   return VFSFSAL_terminate();
 }
 
-fsal_status_t WRAP_VFSFSAL_test_access(fsal_op_context_t * p_context,   /* IN */
-                                       fsal_accessflags_t access_type,  /* IN */
-                                       fsal_attrib_list_t * p_object_attributes /* IN */ )
-{
-  return VFSFSAL_test_access((vfsfsal_op_context_t *) p_context, access_type,
-                             p_object_attributes);
-}
-
-fsal_status_t WRAP_VFSFSAL_setattr_access(fsal_op_context_t * p_context,        /* IN */
-                                          fsal_attrib_list_t * candidate_attributes,    /* IN */
-                                          fsal_attrib_list_t *
-                                          object_attributes /* IN */ )
-{
-  return VFSFSAL_setattr_access((vfsfsal_op_context_t *) p_context, candidate_attributes,
-                                object_attributes);
-}
-
-fsal_status_t WRAP_VFSFSAL_rename_access(fsal_op_context_t * pcontext,  /* IN */
-                                         fsal_attrib_list_t * pattrsrc, /* IN */
-                                         fsal_attrib_list_t * pattrdest)        /* IN */
-{
-  return VFSFSAL_rename_access((vfsfsal_op_context_t *) pcontext, pattrsrc, pattrdest);
-}
-
-fsal_status_t WRAP_VFSFSAL_create_access(fsal_op_context_t * pcontext,  /* IN */
-                                         fsal_attrib_list_t * pattr)    /* IN */
-{
-  return VFSFSAL_create_access((vfsfsal_op_context_t *) pcontext, pattr);
-}
-
-fsal_status_t WRAP_VFSFSAL_unlink_access(fsal_op_context_t * pcontext,  /* IN */
-                                         fsal_attrib_list_t * pattr)    /* IN */
-{
-  return VFSFSAL_unlink_access((vfsfsal_op_context_t *) pcontext, pattr);
-}
-
-fsal_status_t WRAP_VFSFSAL_link_access(fsal_op_context_t * pcontext,    /* IN */
-                                       fsal_attrib_list_t * pattr)      /* IN */
-{
-  return VFSFSAL_link_access((vfsfsal_op_context_t *) pcontext, pattr);
-}
-
-fsal_status_t WRAP_VFSFSAL_merge_attrs(fsal_attrib_list_t * pinit_attr,
-                                       fsal_attrib_list_t * pnew_attr,
-                                       fsal_attrib_list_t * presult_attr)
-{
-  return VFSFSAL_merge_attrs(pinit_attr, pnew_attr, presult_attr);
-}
-
 fsal_status_t WRAP_VFSFSAL_lookup(fsal_handle_t * p_parent_directory_handle,    /* IN */
                                   fsal_name_t * p_filename,     /* IN */
                                   fsal_op_context_t * p_context,        /* IN */
@@ -703,13 +654,13 @@ fsal_functions_t fsal_vfs_functions = {
   .fsal_dynamic_fsinfo = WRAP_VFSFSAL_dynamic_fsinfo,
   .fsal_init = WRAP_VFSFSAL_Init,
   .fsal_terminate = WRAP_VFSFSAL_terminate,
-  .fsal_test_access = WRAP_VFSFSAL_test_access,
-  .fsal_setattr_access = WRAP_VFSFSAL_setattr_access,
-  .fsal_rename_access = WRAP_VFSFSAL_rename_access,
-  .fsal_create_access = WRAP_VFSFSAL_create_access,
-  .fsal_unlink_access = WRAP_VFSFSAL_unlink_access,
-  .fsal_link_access = WRAP_VFSFSAL_link_access,
-  .fsal_merge_attrs = WRAP_VFSFSAL_merge_attrs,
+  .fsal_test_access    = NULL,
+  .fsal_setattr_access = NULL,
+  .fsal_rename_access  = NULL,
+  .fsal_create_access  = NULL,
+  .fsal_unlink_access  = NULL,
+  .fsal_link_access    = NULL,
+  .fsal_merge_attrs    = NULL,
   .fsal_lookup = WRAP_VFSFSAL_lookup,
   .fsal_lookuppath = WRAP_VFSFSAL_lookupPath,
   .fsal_lookupjunction = WRAP_VFSFSAL_lookupJunction,

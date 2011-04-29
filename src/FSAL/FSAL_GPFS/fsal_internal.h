@@ -263,32 +263,6 @@ fsal_status_t GPFSFSAL_Init(fsal_parameter_t * init_info /* IN */ );
 
 fsal_status_t GPFSFSAL_terminate();
 
-fsal_status_t GPFSFSAL_test_access(gpfsfsal_op_context_t * p_context,     /* IN */
-                                  fsal_accessflags_t access_type,       /* IN */
-                                  fsal_attrib_list_t * p_object_attributes /* IN */ );
-
-fsal_status_t GPFSFSAL_setattr_access(gpfsfsal_op_context_t * p_context,  /* IN */
-                                     fsal_attrib_list_t * candidate_attributes, /* IN */
-                                     fsal_attrib_list_t * object_attributes /* IN */ );
-
-fsal_status_t GPFSFSAL_rename_access(gpfsfsal_op_context_t * pcontext,    /* IN */
-                                    fsal_attrib_list_t * pattrsrc,      /* IN */
-                                    fsal_attrib_list_t * pattrdest) /* IN */ ;
-
-fsal_status_t GPFSFSAL_create_access(gpfsfsal_op_context_t * pcontext,    /* IN */
-                                    fsal_attrib_list_t * pattr) /* IN */ ;
-
-fsal_status_t GPFSFSAL_unlink_access(gpfsfsal_op_context_t * pcontext,    /* IN */
-                                    fsal_attrib_list_t * pattr) /* IN */ ;
-
-fsal_status_t GPFSFSAL_link_access(gpfsfsal_op_context_t * pcontext,  /* IN */
-                                   fsal_attrib_list_t    * pattrsrc,  /* IN */
-				   fsal_attrib_list_t    * pattrdest) /* IN */ ;
-
-fsal_status_t GPFSFSAL_merge_attrs(fsal_attrib_list_t * pinit_attr,
-                                  fsal_attrib_list_t * pnew_attr,
-                                  fsal_attrib_list_t * presult_attr);
-
 fsal_status_t GPFSFSAL_lookup(gpfsfsal_handle_t * p_parent_directory_handle,      /* IN */
                              fsal_name_t * p_filename,  /* IN */
                              gpfsfsal_op_context_t * p_context,  /* IN */

@@ -267,58 +267,6 @@ fsal_status_t WRAP_LUSTREFSAL_terminate()
   return LUSTREFSAL_terminate();
 }
 
-fsal_status_t WRAP_LUSTREFSAL_test_access(fsal_op_context_t * p_context,        /* IN */
-                                          fsal_accessflags_t access_type,       /* IN */
-                                          fsal_attrib_list_t *
-                                          p_object_attributes /* IN */ )
-{
-  return LUSTREFSAL_test_access((lustrefsal_op_context_t *) p_context, access_type,
-                                p_object_attributes);
-}
-
-fsal_status_t WRAP_LUSTREFSAL_setattr_access(fsal_op_context_t * p_context,     /* IN */
-                                             fsal_attrib_list_t * candidate_attributes, /* IN */
-                                             fsal_attrib_list_t *
-                                             object_attributes /* IN */ )
-{
-  return LUSTREFSAL_setattr_access((lustrefsal_op_context_t *) p_context,
-                                   candidate_attributes, object_attributes);
-}
-
-fsal_status_t WRAP_LUSTREFSAL_rename_access(fsal_op_context_t * pcontext,       /* IN */
-                                            fsal_attrib_list_t * pattrsrc,      /* IN */
-                                            fsal_attrib_list_t * pattrdest)     /* IN */
-{
-  return LUSTREFSAL_rename_access((lustrefsal_op_context_t *) pcontext, pattrsrc,
-                                  pattrdest);
-}
-
-fsal_status_t WRAP_LUSTREFSAL_create_access(fsal_op_context_t * pcontext,       /* IN */
-                                            fsal_attrib_list_t * pattr) /* IN */
-{
-  return LUSTREFSAL_create_access((lustrefsal_op_context_t *) pcontext, pattr);
-}
-
-fsal_status_t WRAP_LUSTREFSAL_unlink_access(fsal_op_context_t * pcontext,       /* IN */
-                                            fsal_attrib_list_t * pattr) /* IN */
-{
-  return LUSTREFSAL_unlink_access((lustrefsal_op_context_t *) pcontext, pattr);
-}
-
-fsal_status_t WRAP_LUSTREFSAL_link_access(fsal_op_context_t  * pcontext,  /* IN */
-                                          fsal_attrib_list_t * pattrsrc,  /* IN */
-                                          fsal_attrib_list_t * pattrdest) /* IN */
-{
-  return LUSTREFSAL_link_access((lustrefsal_op_context_t *) pcontext, pattrsrc, pattrdest);
-}
-
-fsal_status_t WRAP_LUSTREFSAL_merge_attrs(fsal_attrib_list_t * pinit_attr,
-                                          fsal_attrib_list_t * pnew_attr,
-                                          fsal_attrib_list_t * presult_attr)
-{
-  return LUSTREFSAL_merge_attrs(pinit_attr, pnew_attr, presult_attr);
-}
-
 fsal_status_t WRAP_LUSTREFSAL_lookup(fsal_handle_t * p_parent_directory_handle, /* IN */
                                      fsal_name_t * p_filename,  /* IN */
                                      fsal_op_context_t * p_context,     /* IN */
@@ -706,13 +654,13 @@ fsal_functions_t fsal_lustre_functions = {
   .fsal_dynamic_fsinfo = WRAP_LUSTREFSAL_dynamic_fsinfo,
   .fsal_init = WRAP_LUSTREFSAL_Init,
   .fsal_terminate = WRAP_LUSTREFSAL_terminate,
-  .fsal_test_access = WRAP_LUSTREFSAL_test_access,
-  .fsal_setattr_access = WRAP_LUSTREFSAL_setattr_access,
-  .fsal_rename_access = WRAP_LUSTREFSAL_rename_access,
-  .fsal_create_access = WRAP_LUSTREFSAL_create_access,
-  .fsal_unlink_access = WRAP_LUSTREFSAL_unlink_access,
-  .fsal_link_access = WRAP_LUSTREFSAL_link_access,
-  .fsal_merge_attrs = WRAP_LUSTREFSAL_merge_attrs,
+  .fsal_test_access    = NULL,
+  .fsal_setattr_access = NULL,
+  .fsal_rename_access  = NULL,
+  .fsal_create_access  = NULL,
+  .fsal_unlink_access  = NULL,
+  .fsal_link_access    = NULL,
+  .fsal_merge_attrs    = NULL,
   .fsal_lookup = WRAP_LUSTREFSAL_lookup,
   .fsal_lookuppath = WRAP_LUSTREFSAL_lookupPath,
   .fsal_lookupjunction = WRAP_LUSTREFSAL_lookupJunction,
