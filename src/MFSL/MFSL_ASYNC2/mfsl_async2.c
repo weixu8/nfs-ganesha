@@ -336,17 +336,18 @@ fsal_status_t MFSL_link(mfsl_object_t      * target_handle,  /* IN */
 	fsal_attrib_list_t attr_destdir_old; /* syncly retrived destination directory attributes, just to check */
 	fsal_attrib_list_t attr_obj_new;     /* guessed object attributes */
 
+	/* Sanity checks */
+	if(!p_context || !p_attr_destdir || !pextra)
+		MFSL_return(ERR_FSAL_INVAL, 0);
+
 	/* pextra contains destination and source directory attributes */
 	dirs_attrs = (mfsl_dirs_attributes_t *) pextra;
 	p_attr_destdir = dirs_attrs->src_dir_attrs;
 	p_attr_srcdir = dirs_attrs->dest_dir_attrs;
 
-	/* Sanity checks */
-	if(!p_context || !p_attr_destdir)
-	{
-		LogCrit(COMPONENT_FSAL, "Argument missing!");
-		MFSL_return(ERR_FSAL_INVAL, 0);
-	}
+	/* Sanity checks: are theses directories? */
+	if( (p_attr_srcdir->type != FSAL_TYPE_DIR) || (p_attr_destdir->type != FSAL_TYPE_DIR) )
+		MFSL_return(ERR_FSAL_NOTDIR, 0);
 
 	/* copy destination directory attributes in a new structure */
 	memcpy((void *) &attr_destdir_new, (void *) p_attr_destdir, sizeof(fsal_attrib_list_t));
@@ -594,10 +595,7 @@ fsal_status_t MFSL_rename(mfsl_object_t      * old_parentdir_handle, /* IN */
 		MFSL_return(ERR_FSAL_FAULT, 0);
 
 	if( (psrc_dir_attributes->type != FSAL_TYPE_DIR) || (ptgt_dir_attributes->type != FSAL_TYPE_DIR) )
-	{
-		LogCrit(COMPONENT_FSAL, "This should be a directory!");
-		MFSL_return(ERR_FSAL_INVAL, 0);
-	}
+		MFSL_return(ERR_FSAL_NOTDIR, 0);
 
 	/* get object attributes */
 	attr_old_obj = pextra;
@@ -672,13 +670,13 @@ fsal_status_t MFSL_rename(mfsl_object_t      * old_parentdir_handle, /* IN */
 	return fsal_status;
 }                               /* MFSL_rename */
 
-fsal_status_t MFSL_unlink(mfsl_object_t * parentdir_handle,            /* IN */
-                          fsal_name_t * p_object_name,                 /* IN */
-                          mfsl_object_t * object_handle,               /* INOUT */
-                          fsal_op_context_t * p_context,               /* IN */
-                          mfsl_context_t * p_mfsl_context,             /* IN */
+fsal_status_t MFSL_unlink(mfsl_object_t      * parentdir_handle,       /* IN */
+                          fsal_name_t        * p_object_name,          /* IN */
+                          mfsl_object_t      * object_handle,          /* INOUT */
+                          fsal_op_context_t  * p_context,              /* IN */
+                          mfsl_context_t     * p_mfsl_context,         /* IN */
                           fsal_attrib_list_t * p_parentdir_attributes, /* [IN/OUT ] */
-			  void * pextra                                /* IN */
+			  void               * pextra                  /* IN */
     )
 {
   fsal_status_t fsal_status;                       /* status when we unlink syncly */
