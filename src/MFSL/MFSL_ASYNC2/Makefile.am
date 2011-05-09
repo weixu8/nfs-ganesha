@@ -3,7 +3,9 @@ AM_CFLAGS                     = $(FSAL_CFLAGS) $(SEC_CFLAGS)
 
 noinst_LTLIBRARIES          = libmfslasync2.la
 
-libmfslasync2_la_SOURCES = mfsl_async2.c
+libmfslasync2_la_SOURCES = mfsl_async2.c \
+			   mfsl_async2_init.c \
+			   mfsl_async2_read_conf.c
 
 libmfslasync2_la_LIBADD = $(FSAL_LIB)
 
