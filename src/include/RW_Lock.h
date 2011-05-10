@@ -36,17 +36,21 @@
 
 /* My habit with mutex */
 
+#ifndef P
 #define P( mutex )                                                          \
   do { int rc ;                                                             \
     if( ( rc = pthread_mutex_lock( &mutex ) ) != 0 )                        \
       LogFullDebug(COMPONENT_RW_LOCK, "  --> Error P: %d %d", rc, errno );  \
   } while (0)
+#endif
 
+#ifndef V
 #define V( mutex )                                                          \
   do { int rc ;                                                             \
     if( ( rc = pthread_mutex_unlock( &mutex ) ) != 0 )                      \
       LogFullDebug(COMPONENT_RW_LOCK, "  --> Error V: %d %d", rc, errno );  \
   } while (0)
+#endif
 
 /* Type representing the lock itself */
 typedef struct _RW_LOCK
