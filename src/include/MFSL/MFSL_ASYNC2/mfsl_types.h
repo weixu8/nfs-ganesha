@@ -37,6 +37,15 @@
 #define FALSE 0
 #endif
 
+/* Some habits concerning mutex management */
+#ifndef P
+#define P( a ) pthread_mutex_lock( &a )
+#endif
+
+#ifndef V
+#define V( a ) pthread_mutex_unlock( &a )
+#endif
+
 /*
  * labels in the config file
  */
@@ -95,14 +104,14 @@ typedef struct mfsl_synclet_context__
 
 typedef struct mfsl_synclet_data__
 {
-    unsigned int             index;
-    pthread_cond_t           op_condvar;
-    pthread_mutex_t          mutex_op_condvar;
-    fsal_op_context_t        root_fsal_context;
-    mfsl_synclet_context_t   synclet_context;
-    pthread_mutex_t          mutex_op_lru;
-    unsigned int             passcounter;
-    LRU_list_t             * op_lru;
+    unsigned int             index;             /* Index of the synclet related to this data */
+    pthread_cond_t           op_condvar;        /**/
+    pthread_mutex_t          mutex_op_condvar;  /**/
+    fsal_op_context_t        root_fsal_context; /**/
+    mfsl_synclet_context_t   synclet_context;   /**/
+    pthread_mutex_t          mutex_op_lru;      /**/
+    unsigned int             passcounter;       /**/
+    LRU_list_t             * op_lru;            /**/
 } mfsl_synclet_data_t;
 
 fsal_status_t MFSL_async_dispatcher_init(void * arg);
@@ -179,6 +188,6 @@ typedef struct mfsl_async_op_desc__
 /* functions */
 fsal_status_t MFSL_async_post(mfsl_async_op_desc_t * p_operation_description);
 
-unsigned int MFSL_async_choose_synclet(void);
+unsigned int MFSL_async_choose_synclet(mfsl_async_op_desc_t * candidate_async_op);
 
 #endif                          /* _MFSL_ASYNC2_TYPES_H */

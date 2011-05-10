@@ -90,6 +90,7 @@ int mfsl_async_print_pending_op(LRU_data_t data, char *str)
  */
 fsal_status_t MFSL_SetDefault_parameter(mfsl_parameter_t * out_parameter /* IN/OUT */)
 {
+    /* Sanitize */
     if(!out_parameter)
         MFSL_return(ERR_FSAL_FAULT, 0);
 

@@ -44,10 +44,11 @@
 
 #ifndef _USE_SWIG
 
-extern mfsl_parameter_t mfsl_param;   /* MFSL parameters */
+extern mfsl_parameter_t * mfsl_param;  /* MFSL parameters, from mfsl_async_init.c */
+extern unsigned int       end_of_mfsl; /* from mfsl_async_init.c */
 
-pthread_t           * synclet_thread; /* Synclet Thread Array */
-mfsl_synclet_data_t * synclet_data;   /* Synclet Data Array */
+pthread_t           * synclet_thread;  /* Synclet Thread Array */
+mfsl_synclet_data_t * synclet_data;    /* Synclet Data Array */
 
 /**
  *
@@ -60,9 +61,35 @@ mfsl_synclet_data_t * synclet_data;   /* Synclet Data Array */
  * @return the related fsal_status
  *
  */
-fsal_status_t mfsl_async_process_async_op(mfsl_async_op_desc_t * pasyncopdesc)
+fsal_status_t MFSL_async_process_async_op(mfsl_async_op_desc_t * p_async_op_desc)
 {
-    /** @todo: implement this */
+    mfsl_context_t * p_mfsl_context;
+    fsal_status_t    fsal_status;
+
+    /* Sanitize */
+    if(!p_async_op_desc)
+        MFSL_return(ERR_FSAL_FAULT, 0);
+
+    LogFullDebug(COMPONENT_MFSL, "Processing operation (%u, %s).",
+            p_async_op_desc->op_type,
+            mfsl_async_op_name[p_async_op_desc->op_type]);
+
+    /* Call operation on data */
+    fsal_status = (p_async_op_desc->op_func) (p_async_op_desc);
+
+    /** @todo: should we return status? */
+    if(FSAL_IS_ERROR(fsal_status))
+        LogMajor(COMPONENT_MFSL, "Impossible to process: op_type=%u %s : error (%u, %u)",
+                p_async_op_desc->op_type, mfsl_async_op_name[p_async_op_desc->op_type],
+                fsal_status.major, fsal_status.minor);
+
+    /* Free the previously allocated structures */
+    p_mfsl_context = (mfsl_context_t *) p_async_op_desc->ptr_mfsl_context;
+
+    P(p_mfsl_context->lock);
+    ReleaseToPool(p_async_op_desc, &p_mfsl_context->pool_async_op);
+    V(p_mfsl_context->lock);
+
     MFSL_return(ERR_FSAL_NO_ERROR, 0);
 }
 
@@ -70,13 +97,18 @@ fsal_status_t mfsl_async_process_async_op(mfsl_async_op_desc_t * pasyncopdesc)
  *
  * MFSL_async_choose_synclet: Choose the synclet that will receive an asynchornous op to manage
  *
- * @param (none)
+ * @param candidate_async_op    the asynchronous operation we want to perform
  *
  * @return the index for the synclet to be used.
  *
  */
-unsigned int MFSL_async_choose_synclet(void){
+unsigned int MFSL_async_choose_synclet(mfsl_async_op_desc_t * candidate_async_op)
+{
     /** @todo: implement this */
+
+    /* For the moment we only have one synclet running.
+     * Return 0 anyway.
+     * */
     return 0;
 }
 
@@ -92,7 +124,65 @@ unsigned int MFSL_async_choose_synclet(void){
  */
 void * mfsl_async_synclet_thread(void * arg)
 {
-    /** @todo: implement this */
+    mfsl_synclet_data_t  * my_synclet_data = (mfsl_synclet_data_t *) arg;
+    mfsl_async_op_desc_t * current_async_operation;
+    LRU_entry_t          * current_lru_entry;
+    fsal_status_t          fsal_status;
+
+    /* Init all contexts
+     * */
+
+    /* Let's start!
+     * */
+    LogEvent(COMPONENT_MFSL, "Synclet %d starts.", my_synclet_data->index);
+
+    /* Synclet loop. */
+    while(!end_of_mfsl)
+    {
+        /* Wait for a signal from dispatcher_thread */
+        P(my_synclet_data->mutex_op_condvar);
+        while(my_synclet_data->op_lru->nb_entry == my_synclet_data->op_lru->nb_invalid)
+            pthread_cond_wait(&my_synclet_data->op_condvar, &my_synclet_data->mutex_op_condvar);
+        V(my_synclet_data->mutex_op_condvar);
+
+        /* Loop on my_synclet_data.op_lru */
+        P(my_synclet_data->mutex_op_lru);
+        for(current_lru_entry=my_synclet_data->op_lru->LRU ; current_lru_entry != NULL ;
+                current_lru_entry=current_lru_entry->next)
+        {
+            /* ignore invalid entries */
+            if(current_lru_entry->valid_state == LRU_ENTRY_VALID)
+            {
+                /* Get current asynchronous operation to perform. */
+                current_async_operation = (mfsl_async_op_desc_t *) (current_lru_entry->buffdata.pdata);
+                fsal_status = MFSL_async_process_async_op(current_async_operation);
+
+                if(FSAL_IS_ERROR(fsal_status)) /* @todo: should never happen, unless we change the process function */
+                    LogCrit(COMPONENT_MFSL, "Impossible to perform asynchronous operation.");
+
+                /* Invalidate entry. */
+                if(LRU_invalidate(my_synclet_data->op_lru, current_lru_entry) != LRU_LIST_SUCCESS)
+                    LogCrit(COMPONENT_MFSL, "Impossible to invalidate lru_entry in synclet_data %d.", my_synclet_data->index);
+            }
+        }
+
+        /* We just made another loop. */
+        my_synclet_data->passcounter += 1;
+
+        /* Garbage collect */
+        if(my_synclet_data->passcounter >= mfsl_param->nb_before_gc)
+        {
+            if(LRU_gc_invalid(my_synclet_data->op_lru, NULL) != LRU_LIST_SUCCESS)
+                LogCrit(COMPONENT_MFSL, "Impossible to garbage collect op_lru in synclet %d. passcounter: %d.", my_synclet_data->index, my_synclet_data->passcounter);
+
+            my_synclet_data->passcounter = 0;
+        }
+
+        V(my_synclet_data->mutex_op_lru);
+    } /* end_of_mfsl */
+
+    LogEvent(COMPONENT_MFSL, "Synclet %d Ends.", my_synclet_data->index);
+
     return NULL;
 }
 
@@ -108,7 +198,51 @@ void * mfsl_async_synclet_thread(void * arg)
  */
 fsal_status_t MFSL_async_synclet_init(void * arg)
 {
-    /** @todo: implement this */
+    pthread_attr_t synclet_thread_attr;
+    LRU_status_t   lru_status;
+    int            i = 0;
+    int            rc;
+
+    LogEvent(COMPONENT_MFSL, "Synclets Initialisation.");
+
+    pthread_attr_init(&synclet_thread_attr);
+    pthread_attr_setscope(&synclet_thread_attr, PTHREAD_SCOPE_SYSTEM);
+    pthread_attr_setdetachstate(&synclet_thread_attr, PTHREAD_CREATE_JOINABLE);
+
+    if((synclet_thread = (pthread_t *)
+                Mem_Alloc(mfsl_param->nb_synclet * sizeof(pthread_t))) == NULL)
+        MFSL_return(ERR_FSAL_NOMEM, errno);
+
+    if((synclet_data = (mfsl_synclet_data_t *)
+                Mem_Alloc(mfsl_param->nb_synclet * sizeof(mfsl_synclet_data_t))) == NULL)
+        MFSL_return(ERR_FSAL_NOMEM, errno);
+
+    for(i=0; i < mfsl_param->nb_synclet; i++)
+    {
+        LogDebug(COMPONENT_MFSL, "Initialisation of synclet number %d.", i);
+        synclet_data[i].index = i;
+
+        if(pthread_cond_init(&synclet_data[i].op_condvar, NULL)        != 0)
+            MFSL_return(ERR_FSAL_INVAL, 0); /* @todo: return SERVERFAULT? */
+
+        if(pthread_mutex_init(&synclet_data[i].mutex_op_condvar, NULL) != 0)
+            MFSL_return(ERR_FSAL_INVAL, 0); /* @todo: return SERVERFAULT? */
+
+        if(pthread_mutex_init(&synclet_data[i].mutex_op_lru, NULL)     != 0)
+            MFSL_return(ERR_FSAL_INVAL, 0); /* @todo: return SERVERFAULT? */
+
+        if((synclet_data[i].op_lru = LRU_Init(mfsl_param->lru_param, &lru_status)) == NULL)
+            MFSL_return(ERR_FSAL_INVAL, (int) lru_status); /* @todo: return SERVERFAULT? */
+
+        synclet_data[i].passcounter = 0;
+
+        if((rc = pthread_create(&synclet_thread[i],
+                        &synclet_thread_attr,
+                        mfsl_async_synclet_thread,
+                        (void *) &synclet_data[i]))     != 0)
+            MFSL_return(ERR_FSAL_SERVERFAULT, -rc);
+    }
+
     MFSL_return(ERR_FSAL_NO_ERROR, 0);
 }
 

@@ -28,9 +28,7 @@
  * \author  $Author: leibovic $
  * \date    $Date: 2011/05/9 15:57:01 $
  * \version $Revision: 1.0 $
- * \brief   Initialisation of MFSL_ASYNC2.
- *
- *
+ * \brief   Initialisation and termination of MFSL_ASYNC2.
  */
 
 #include "config.h"
@@ -41,11 +39,14 @@
 #include "mfsl_types.h"
 #include "mfsl.h"
 #include "common_utils.h"
+#include <errno.h>
+#include <pthread.h>
 
 
 #ifndef _USE_SWIG
 
-mfsl_parameter_t mfsl_param; /* MFSL parameters */
+mfsl_parameter_t * mfsl_param;          /* MFSL parameters */
+unsigned int       end_of_mfsl = FALSE; /* Dispatcher and Synclets check this to stop */
 
 /**
  * MFSL_Init: Inits the MFSL layer.
@@ -58,14 +59,29 @@ mfsl_parameter_t mfsl_param; /* MFSL parameters */
  */
 fsal_status_t MFSL_Init(mfsl_parameter_t * init_info    /* IN */)
 {
-    /** @todo implement this. */
-	fsal_status_t status;
+	fsal_status_t status;;
 
-	status.major = ERR_FSAL_NO_ERROR;
-	status.minor = 0;
+    /* Sanitize */
+    if(!init_info)
+        MFSL_return(ERR_FSAL_FAULT, 0);
 
-	return status;
-}
+    LogEvent(COMPONENT_MFSL, "MFSL Initialisation.");
+
+    /* Keep init_info in mind. */
+    mfsl_param = init_info;
+
+    /* Initializes and launch dispatcher */
+    status = MFSL_async_dispatcher_init(NULL);
+    if(FSAL_IS_ERROR(status))
+        MFSL_return(status.major, 0);
+
+    /* Initializes and launch synclets */
+    status = MFSL_async_synclet_init(NULL);
+    if(FSAL_IS_ERROR(status))
+        MFSL_return(status.major, 0);
+
+	MFSL_return(ERR_FSAL_NO_ERROR, 0);
+} /* MFSL_Init */
 
 /**
  *
@@ -82,14 +98,29 @@ fsal_status_t MFSL_Init(mfsl_parameter_t * init_info    /* IN */)
 fsal_status_t MFSL_GetContext(mfsl_context_t    * pcontext,
                               fsal_op_context_t * pfsal_context)
 {
-    /** @todo implement this. */
 	fsal_status_t status;
 
-	status.major = ERR_FSAL_NO_ERROR;
-	status.minor = 0;
+    /* Sanitize */
+    if(!pcontext || !pfsal_context)
+        MFSL_return(ERR_FSAL_FAULT, 0);
 
-	return status;
-}
+    if(pthread_mutex_init(&pcontext->lock, NULL) != 0)
+        MFSL_return(ERR_FSAL_SERVERFAULT, errno);
+
+    /* Creates the pool of asynchronous operations */
+    MakePool(&pcontext->pool_async_op, mfsl_param->nb_pre_async_op_desc, mfsl_async_op_desc_t, NULL, NULL);
+
+    /* Does Nothing for the moment.
+     * Will reallocate files and dirs for this thread */
+    P(pcontext->lock);
+    status = MFSL_RefreshContext(pcontext, pfsal_context);
+    V(pcontext->lock);
+
+    if(FSAL_IS_ERROR(status))
+        MFSL_return(status.major, 0);
+
+	MFSL_return(ERR_FSAL_NO_ERROR, 0);
+} /* MFSL_GetContext */
 
 /**
  *
@@ -97,7 +128,7 @@ fsal_status_t MFSL_GetContext(mfsl_context_t    * pcontext,
  *
  * Refreshes a MFSL context for a thread.
  *
- * @param pcontext      [INOUT] pointer to MFSL context to be used 
+ * @param pcontext      [INOUT] pointer to MFSL context to be used
  * @param pfsal_context [INOUT] pointer to FSAL context to be used
  *
  * @return a FSAL status
@@ -107,12 +138,38 @@ fsal_status_t MFSL_RefreshContext(mfsl_context_t    * pcontext,
                                   fsal_op_context_t * pfsal_context)
 {
     /** @todo implement this. */
-	fsal_status_t status;
 
-	status.major = ERR_FSAL_NO_ERROR;
-	status.minor = 0;
+    /* Sanitize */
+    if(!pcontext || !pfsal_context)
+        MFSL_return(ERR_FSAL_FAULT, 0);
 
-	return status;
-}
+	MFSL_return(ERR_FSAL_NO_ERROR, 0);
+} /* MFSL_RefreshContext */
 
 #endif                          /* ! _USE_SWIG */
+
+/**
+ *
+ * MFSL_terminate: Terminates the MFSL Layer.
+ *
+ * Terminates the MFSL Layer. Is called before exiting.
+ *
+ * @param void
+ *
+ * @return a FSAL status
+ *
+ */
+fsal_status_t MFSL_terminate(void)
+{
+    fsal_status_t status;
+
+    LogEvent(COMPONENT_MFSL, "MFSL termination.");
+
+    /* Tells Dispatcher and Synclets loops to stop looping. */
+    end_of_mfsl = TRUE;
+
+    /** @todo: join dispatcher and synclets */
+
+    MFSL_return(ERR_FSAL_NO_ERROR, 0);
+
+} /* MFSL_terminate */

@@ -695,18 +695,6 @@ fsal_status_t MFSL_rcp_by_fileid(mfsl_object_t * filehandle,    /* IN */
                             fileid, p_context, p_local_path, transfer_opt);
 }                               /* MFSL_rcp_by_fileid */
 
-/* To be called before exiting */
-fsal_status_t MFSL_terminate(void)
-{
-  fsal_status_t status;
-
-  status.major = ERR_FSAL_NO_ERROR;
-  status.minor = 0;
-
-  return status;
-
-}                               /* MFSL_terminate */
-
 #ifndef _USE_SWIG
 
 /******************************************************

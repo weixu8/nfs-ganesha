@@ -3,13 +3,15 @@ AM_CFLAGS                     = $(FSAL_CFLAGS) $(SEC_CFLAGS)
 
 noinst_LTLIBRARIES          = libmfslasync2.la
 
-libmfslasync2_la_SOURCES = mfsl_async2.c \
-			   mfsl_async2_init.c \
-			   mfsl_async2_read_conf.c
+libmfslasync2_la_SOURCES = mfsl_async2.c            \
+                           mfsl_async2_init.c       \
+                           mfsl_async2_read_conf.c  \
+                           mfsl_async2_dispatcher.c \
+                           mfsl_async2_synclet.c
 
 libmfslasync2_la_LIBADD = $(FSAL_LIB)
 
-#check_PROGRAMS 	     = test_mfsl_template
+#check_PROGRAMS              = test_mfsl_template
 #test_mfsl_template_SOURCES  = test_fsal.c 
 #test_mfsl_template_LDADD    = $(FSAL_LIB) $(FSAL_LDFLAGS) -lpthread
 
