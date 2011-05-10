@@ -10,16 +10,16 @@
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 3 of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
- * 
+ *
  * ---------------------------------------
  */
 
@@ -44,41 +44,75 @@
 
 
 #ifndef _USE_SWIG
-/** 
- *  MFSL_Init:
- *  Initializes MFSL.
+
+mfsl_parameter_t mfsl_param; /* MFSL parameters */
+
+/**
+ * MFSL_Init: Inits the MFSL layer.
+ *
+ * Inits the MFSL layer.
+ *
+ * @param init_info      [IN] pointer to the MFSL parameters
+ *
+ * @return a FSAL status
  */
-fsal_status_t MFSL_Init(mfsl_parameter_t * init_info    /* IN */
-    )
+fsal_status_t MFSL_Init(mfsl_parameter_t * init_info    /* IN */)
 {
-  fsal_status_t status;
+    /** @todo implement this. */
+	fsal_status_t status;
 
-  status.major = ERR_FSAL_NO_ERROR;
-  status.minor = 0;
+	status.major = ERR_FSAL_NO_ERROR;
+	status.minor = 0;
 
-  return status;
+	return status;
 }
 
-fsal_status_t MFSL_GetContext(mfsl_context_t * pcontext,
-			      fsal_op_context_t * pfsal_context)
+/**
+ *
+ * MFSL_GetContext: Creates a MFSL context for a thread.
+ *
+ * Creates a MFSL context for a thread.
+ *
+ * @param pcontext      [INOUT] pointer to MFSL context to be used
+ * @param pfsal_context [INOUT] pointer to FSAL context to be used
+ *
+ * @return a FSAL status
+ *
+ */
+fsal_status_t MFSL_GetContext(mfsl_context_t    * pcontext,
+                              fsal_op_context_t * pfsal_context)
 {
-  fsal_status_t status;
+    /** @todo implement this. */
+	fsal_status_t status;
 
-  status.major = ERR_FSAL_NO_ERROR;
-  status.minor = 0;
+	status.major = ERR_FSAL_NO_ERROR;
+	status.minor = 0;
 
-  return status;
+	return status;
 }
 
-fsal_status_t MFSL_RefreshContext(mfsl_context_t * pcontext,
+/**
+ *
+ * MFSL_RefreshContext: Refreshes a MFSL context for a thead.
+ *
+ * Refreshes a MFSL context for a thread.
+ *
+ * @param pcontext      [INOUT] pointer to MFSL context to be used 
+ * @param pfsal_context [INOUT] pointer to FSAL context to be used
+ *
+ * @return a FSAL status
+ *
+ */
+fsal_status_t MFSL_RefreshContext(mfsl_context_t    * pcontext,
                                   fsal_op_context_t * pfsal_context)
 {
-  fsal_status_t status;
+    /** @todo implement this. */
+	fsal_status_t status;
 
-  status.major = ERR_FSAL_NO_ERROR;
-  status.minor = 0;
+	status.major = ERR_FSAL_NO_ERROR;
+	status.minor = 0;
 
-  return status;
+	return status;
 }
 
 #endif                          /* ! _USE_SWIG */
