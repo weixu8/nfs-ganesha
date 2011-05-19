@@ -63,12 +63,13 @@
 
 typedef struct mfsl_parameter__
 {
-    unsigned int    nb_pre_async_op_desc; /**< Number of preallocated Async Op descriptors    */
-    unsigned int    nb_synclet;           /**< Number of synclet to be used                   */
-    unsigned int    nb_before_gc;         /**< Numbers of calls before LRU invalide GC        */
-    long int        async_window_sec;     /**< Asynchronous Task Dispatcher Window (seconds)  */
-    long int        async_window_usec;    /**< Asynchronous Task Dispatcher Window (useconds) */
-    LRU_parameter_t lru_param;            /**< Parameter to LRU for async op                  */
+    unsigned int    nb_pre_async_op_desc; /**< Number of preallocated Async Op descriptors      */
+    unsigned int    nb_synclet;           /**< Number of synclet to be used                     */
+    unsigned int    nb_before_gc;         /**< Numbers of calls before LRU invalide GC          */
+    long int        async_window_sec;     /**< Asynchronous Task Dispatcher Window (seconds)    */
+    long int        async_window_usec;    /**< Asynchronous Task Dispatcher Window (useconds)   */
+    unsigned int    ADT_sleep_time;       /**< Asynchronous Dispatcher Thread sleep time (usec) */
+    LRU_parameter_t lru_param;            /**< Parameter to LRU for async op                    */
 } mfsl_parameter_t;
 
 typedef struct mfsl_context__

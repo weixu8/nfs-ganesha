@@ -97,15 +97,17 @@ fsal_status_t MFSL_SetDefault_parameter(mfsl_parameter_t * out_parameter /* IN/O
         MFSL_return(ERR_FSAL_FAULT, 0);
 
     out_parameter->nb_pre_async_op_desc = 50;
-    out_parameter->nb_synclet = 1;
-    out_parameter->async_window_sec = 1;
-    out_parameter->async_window_usec = 0;
-    out_parameter->nb_before_gc = 500;
+    out_parameter->nb_synclet           = 1;
+    out_parameter->async_window_sec     = 1;
+    out_parameter->async_window_usec    = 0;
+    out_parameter->nb_before_gc         = 500;
 
-    out_parameter->lru_param.nb_entry_prealloc = 100;
+    out_parameter->ADT_sleep_time = 60000;
+
+    out_parameter->lru_param.nb_entry_prealloc  = 100;
     out_parameter->lru_param.nb_call_gc_invalid = 30;
-    out_parameter->lru_param.clean_entry = mfsl_async_clean_pending_op;
-    out_parameter->lru_param.entry_to_str = mfsl_async_print_pending_op;
+    out_parameter->lru_param.clean_entry        = mfsl_async_clean_pending_op;
+    out_parameter->lru_param.entry_to_str       = mfsl_async_print_pending_op;
 
     MFSL_return(ERR_FSAL_NO_ERROR, 0);
 } /* MFSL_SetDefault_parameter */
@@ -206,6 +208,11 @@ fsal_status_t MFSL_load_parameter_from_conf(config_file_t      in_config,       
             /* Number of preallocated operation description */
             p_out_parameter->nb_pre_async_op_desc = atoi(key_value);
         }
+        else if(!strcasecmp(key_name, "ADT_Sleep_Time"))
+        {
+            /* Asynchronous Dispatcher thread sleep time in microseconds */
+            p_out_parameter->ADT_sleep_time = atoi(key_value);
+        }
         else if(!strcasecmp(key_name, "LRU_Prealloc_PoolSize"))
         {
             /* Number of entries to prealloc in a pool */
@@ -249,12 +256,13 @@ fsal_status_t MFSL_load_parameter_from_conf(config_file_t      in_config,       
         SetComponentLogLevel(COMPONENT_MFSL, DebugLevel);
 
     /* to sum up */
-    LogDebug(COMPONENT_MFSL, "parameter->nb_synclet = %d", p_out_parameter->nb_synclet);
-    LogDebug(COMPONENT_MFSL, "parameter->async_window_sec = %ld", p_out_parameter->async_window_sec);
-    LogDebug(COMPONENT_MFSL, "parameter->async_window_usec = %ld", p_out_parameter->async_window_usec);
-    LogDebug(COMPONENT_MFSL, "parameter->nb_before_gc = %d", p_out_parameter->nb_before_gc);
-    LogDebug(COMPONENT_MFSL, "parameter->nb_pre_async_op_desc = %d", p_out_parameter->nb_pre_async_op_desc);
-    LogDebug(COMPONENT_MFSL, "parameter->lru_param.nb_entry_prealloc = %d", p_out_parameter->lru_param.nb_entry_prealloc);
+    LogDebug(COMPONENT_MFSL, "parameter->nb_synclet = %d",                   p_out_parameter->nb_synclet);
+    LogDebug(COMPONENT_MFSL, "parameter->async_window_sec = %ld",            p_out_parameter->async_window_sec);
+    LogDebug(COMPONENT_MFSL, "parameter->async_window_usec = %ld",           p_out_parameter->async_window_usec);
+    LogDebug(COMPONENT_MFSL, "parameter->nb_before_gc = %d",                 p_out_parameter->nb_before_gc);
+    LogDebug(COMPONENT_MFSL, "parameter->nb_pre_async_op_desc = %d",         p_out_parameter->nb_pre_async_op_desc);
+    LogDebug(COMPONENT_MFSL, "parameter->ADT_sleep_time = %d",               p_out_parameter->ADT_sleep_time);
+    LogDebug(COMPONENT_MFSL, "parameter->lru_param.nb_entry_prealloc = %d",  p_out_parameter->lru_param.nb_entry_prealloc);
     LogDebug(COMPONENT_MFSL, "parameter->lru_param.nb_call_gc_invalid = %d", p_out_parameter->lru_param.nb_call_gc_invalid);
     if(LogFile)
         LogDebug(COMPONENT_MFSL, "LogFile = %s", LogFile);
