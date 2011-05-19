@@ -61,6 +61,8 @@ fsal_status_t MFSL_Init(mfsl_parameter_t * init_info    /* IN */)
 {
 	fsal_status_t status;;
 
+    SetNameFunction("MFSL_Init");
+
     /* Sanitize */
     if(!init_info)
         MFSL_return(ERR_FSAL_FAULT, 0);
@@ -68,7 +70,12 @@ fsal_status_t MFSL_Init(mfsl_parameter_t * init_info    /* IN */)
     LogEvent(COMPONENT_MFSL, "MFSL Initialisation.");
 
     /* Keep init_info in mind. */
-    mfsl_param = init_info;
+    /* Had to make a copy. For a curious reason keeping only the pointer leads
+     * to uninitialized memory in ganeshell when using cache_inode.
+     * */
+    mfsl_param = (mfsl_parameter_t *) Mem_Alloc(sizeof(mfsl_parameter_t));
+    memcpy(mfsl_param, init_info, sizeof(mfsl_parameter_t));
+    /*mfsl_param = init_info;*/
 
     /* Initializes and launch dispatcher */
     status = MFSL_async_dispatcher_init(NULL);
@@ -100,9 +107,13 @@ fsal_status_t MFSL_GetContext(mfsl_context_t    * pcontext,
 {
 	fsal_status_t status;
 
+    SetNameFunction("MFSL_GetContext");
+
     /* Sanitize */
     if(!pcontext || !pfsal_context)
         MFSL_return(ERR_FSAL_FAULT, 0);
+
+    LogDebug(COMPONENT_MFSL, "Getting context %p.", pcontext);
 
     if(pthread_mutex_init(&pcontext->lock, NULL) != 0)
         MFSL_return(ERR_FSAL_SERVERFAULT, errno);
@@ -137,11 +148,14 @@ fsal_status_t MFSL_GetContext(mfsl_context_t    * pcontext,
 fsal_status_t MFSL_RefreshContext(mfsl_context_t    * pcontext,
                                   fsal_op_context_t * pfsal_context)
 {
+    SetNameFunction("MFSL_RefreshContext");
     /** @todo implement this. */
 
     /* Sanitize */
     if(!pcontext || !pfsal_context)
         MFSL_return(ERR_FSAL_FAULT, 0);
+
+    LogDebug(COMPONENT_MFSL, "Refreshing context %p.", pcontext);
 
 	MFSL_return(ERR_FSAL_NO_ERROR, 0);
 } /* MFSL_RefreshContext */
@@ -161,7 +175,7 @@ fsal_status_t MFSL_RefreshContext(mfsl_context_t    * pcontext,
  */
 fsal_status_t MFSL_terminate(void)
 {
-    fsal_status_t status;
+    SetNameFunction("MFSL_terminate");
 
     LogEvent(COMPONENT_MFSL, "MFSL termination.");
 
@@ -171,5 +185,4 @@ fsal_status_t MFSL_terminate(void)
     /** @todo: join dispatcher and synclets */
 
     MFSL_return(ERR_FSAL_NO_ERROR, 0);
-
 } /* MFSL_terminate */

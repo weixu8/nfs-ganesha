@@ -231,6 +231,29 @@ static int InitThread(cmdCacheInode_thr_info_t * thr_info)
       return 1;
     }
 
+#ifdef _USE_MFSL_ASYNC2
+  /* We need to call MFSL_GetContext a second time because of the way Ganeshell works.
+   * Normally, when Ganesha starts, the cache_inode call MFSL_GetContext and remembers
+   * the adress of the context.
+   *
+   * With Ganeshell we first get the context in MFSL and call the cache_inode which 
+   * calls it again, with another adress.
+   *
+   * The problem is that the context used in ganeshell is the cache_inode one which is not
+   * prepared properly like it would be; hence this call that was missing.
+   * */
+
+  /* Init mfsl_context */
+  st = MFSL_GetContext(&thr_info->client.mfsl_context, &thr_info->context);
+  if(FSAL_IS_ERROR(st))
+  {
+       printf
+          ("%p:commands_Cache_inode: Error %d getting mfsl context (MFSL_GetContext)\n",
+           (caddr_t) pthread_self(), st.major);
+      return 1;
+  }
+#endif /* _USE_MFSL */
+
   thr_info->is_thread_init = TRUE;
 
   return 0;
