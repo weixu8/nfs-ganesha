@@ -90,6 +90,8 @@ int mfsl_async_print_pending_op(LRU_data_t data, char *str)
  */
 fsal_status_t MFSL_SetDefault_parameter(mfsl_parameter_t * out_parameter /* IN/OUT */)
 {
+    SetNameFunction("MFSL_SetDefault_parameter");
+
     /* Sanitize */
     if(!out_parameter)
         MFSL_return(ERR_FSAL_FAULT, 0);
@@ -106,7 +108,7 @@ fsal_status_t MFSL_SetDefault_parameter(mfsl_parameter_t * out_parameter /* IN/O
     out_parameter->lru_param.entry_to_str = mfsl_async_print_pending_op;
 
     MFSL_return(ERR_FSAL_NO_ERROR, 0);
-}                               /* MFSL_SetDefault_parameter */
+} /* MFSL_SetDefault_parameter */
 
 /**
  * MFSL_load_parameter_from_conf,
@@ -126,16 +128,137 @@ fsal_status_t MFSL_SetDefault_parameter(mfsl_parameter_t * out_parameter /* IN/O
  *         ERR_FSAL_SERVERFAULT (unexpected error)
  *         ERR_FSAL_FAULT (null pointer given as parameter),
  */
-fsal_status_t MFSL_load_parameter_from_conf(config_file_t      in_config,     /* IN */
-                                            mfsl_parameter_t * out_parameter) /* IN/OUT */
+fsal_status_t MFSL_load_parameter_from_conf(config_file_t      in_config,        /* IN */
+                                            mfsl_parameter_t * p_out_parameter) /* IN/OUT */
 {
-    /** @todo: implement this */
-	fsal_status_t status;
+    fsal_status_t   status;
+    config_item_t   block;
+    config_item_t   current_item;
+    int             var_nb;
+    int             var_cur;
+    int             err;
+    char          * key_name;
+    char          * key_value;
+    char          * LogFile    = NULL;
+    int             DebugLevel = -1;
 
-	status.major = ERR_FSAL_NO_ERROR;
-	status.minor = 0;
+    SetNameFunction("MFSL_load_parameter_from_conf");
 
-	return status;
-}
+    /* Sanitize */
+    if(!in_config || !p_out_parameter)
+        MFSL_return(ERR_FSAL_FAULT, 0);
 
+    /* Get configuration Block */
+    if((block = config_FindItemByName(in_config, CONF_LABEL_MFSL_ASYNC2)) == NULL)
+    {
+        LogMajor(COMPONENT_MFSL, "/!\\ Cannot read item \"%s\" from configuration file\n",
+                CONF_LABEL_MFSL_ASYNC2);
+
+        MFSL_return(ERR_FSAL_NOENT, 0);
+    }
+
+    /* Total number of configuration items for this block */
+    var_nb = config_GetNbItems(block);
+
+    /* Let's check parameters */
+    for(var_cur=0; var_cur < var_nb; var_cur++)
+    {
+        current_item = config_GetItemByIndex(block, var_cur);
+
+        /* get key value */
+        err = config_GetKeyValue(current_item, &key_name, &key_value);
+        if(err > 0)
+        {
+            LogCrit(COMPONENT_MFSL, "Error reading key[%d] from section \"%s\" of configuration file.",
+                    var_cur, CONF_LABEL_MFSL_ASYNC2);
+            MFSL_return(ERR_FSAL_SERVERFAULT, err);
+        }
+
+        /* Set keys */
+        if(!strcasecmp(key_name, "Nb_Synclet"))
+        {
+            /* Number of synclet managed */
+            /** \todo update this when scheduler is implemented */
+            LogMajor(COMPONENT_MFSL,
+                    "The asynchronous operation scheduler is not yet implemented. Only one synclet managed.");
+            LogMajor(COMPONENT_MFSL, "Parameter Nb_Synclet = %s will be ignored", key_value);
+
+            /* p_out_parameter->nb_synclet = atoi(key_value); */
+            p_out_parameter->nb_synclet = 1;
+        }
+        else if(!strcasecmp(key_name, "Async_Window_sec"))
+        {
+            /* Size of the asynchronous window: seconds */
+            p_out_parameter->async_window_sec = atoi(key_value);
+        }
+        else if(!strcasecmp(key_name, "Async_Window_usec"))
+        {
+            /* Size of the asynchronous window: micro seconds */
+            p_out_parameter->async_window_usec = atoi(key_value);
+        }
+        else if(!strcasecmp(key_name, "Nb_Sync_Before_GC"))
+        {
+            /* Number of loops before garbage collect a LRU */
+            p_out_parameter->nb_before_gc = atoi(key_value);
+        }
+        else if(!strcasecmp(key_name, "Nb_Pre_Async_Op_desc"))
+        {
+            /* Number of preallocated operation description */
+            p_out_parameter->nb_pre_async_op_desc = atoi(key_value);
+        }
+        else if(!strcasecmp(key_name, "LRU_Prealloc_PoolSize"))
+        {
+            /* Number of entries to prealloc in a pool */
+            p_out_parameter->lru_param.nb_entry_prealloc = atoi(key_value);
+        }
+        else if(!strcasecmp(key_name, "LRU_Nb_Call_Gc_invalid"))
+        {
+            /* How many call before garbagging invalid entries */
+            p_out_parameter->lru_param.nb_call_gc_invalid = atoi(key_value);
+        }
+        else if(!strcasecmp(key_name, "DebugLevel"))
+        {
+            /* Debug Level */
+            DebugLevel = ReturnLevelAscii(key_value);
+
+            if(DebugLevel == -1)
+            {
+                LogMajor(COMPONENT_MFSL, "Invalid debug level name: \"%s\"", key_value);
+                MFSL_return(ERR_FSAL_INVAL, 0);
+            }
+        }
+        else if(!strcasecmp(key_name, "LogFile"))
+        {
+            LogFile = key_value;
+        }
+        else
+        {
+            /* Unknown key */
+            LogMajor(COMPONENT_MFSL,
+                    "Unknown or unsettable key %s from section \"%s\" of configuration file.",
+                    key_name, CONF_LABEL_MFSL_ASYNC2);
+
+            MFSL_return(ERR_FSAL_INVAL, 0);
+        }
+    }
+
+    if(LogFile)
+        SetComponentLogFile(COMPONENT_MFSL, LogFile);
+
+    if(DebugLevel != -1)
+        SetComponentLogLevel(COMPONENT_MFSL, DebugLevel);
+
+    /* to sum up */
+    LogDebug(COMPONENT_MFSL, "parameter->nb_synclet = %d", p_out_parameter->nb_synclet);
+    LogDebug(COMPONENT_MFSL, "parameter->async_window_sec = %ld", p_out_parameter->async_window_sec);
+    LogDebug(COMPONENT_MFSL, "parameter->async_window_usec = %ld", p_out_parameter->async_window_usec);
+    LogDebug(COMPONENT_MFSL, "parameter->nb_before_gc = %d", p_out_parameter->nb_before_gc);
+    LogDebug(COMPONENT_MFSL, "parameter->nb_pre_async_op_desc = %d", p_out_parameter->nb_pre_async_op_desc);
+    LogDebug(COMPONENT_MFSL, "parameter->lru_param.nb_entry_prealloc = %d", p_out_parameter->lru_param.nb_entry_prealloc);
+    LogDebug(COMPONENT_MFSL, "parameter->lru_param.nb_call_gc_invalid = %d", p_out_parameter->lru_param.nb_call_gc_invalid);
+    if(LogFile)
+        LogDebug(COMPONENT_MFSL, "LogFile = %s", LogFile);
+
+    MFSL_return(ERR_FSAL_NO_ERROR, 0);
+} /* MFSL_load_parameter_from_conf */
 #endif                          /* ! _USE_SWIG */
