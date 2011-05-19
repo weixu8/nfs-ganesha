@@ -24,12 +24,11 @@
  */
 
 /**
- * \file    fsal.h
+ * \file    mfsl_async2.c
  * \author  $Author: leibovic $
- * \date    $Date: 2006/02/17 13:41:01 $
+ * \date    $Date: 2011/05/13 13:40:00 $
  * \version $Revision: 1.72 $
- * \brief   File System Abstraction Layer interface.
- *
+ * \brief   Asynchronous MFSL Layer.
  *
  */
 
@@ -579,78 +578,6 @@ fsal_status_t MFSL_rename(mfsl_object_t      * old_parentdir_handle, /* IN */
 	/* for the moment, return sync status anyway */
 	return fsal_status;
 }                               /* MFSL_rename */
-
-fsal_status_t MFSL_unlink(mfsl_object_t      * parentdir_handle,       /* IN */
-                          fsal_name_t        * p_object_name,          /* IN */
-                          mfsl_object_t      * object_handle,          /* INOUT */
-                          fsal_op_context_t  * p_context,              /* IN */
-                          mfsl_context_t     * p_mfsl_context,         /* IN */
-                          fsal_attrib_list_t * p_parentdir_attributes, /* [IN/OUT ] */
-			  void               * pextra                  /* IN */
-    )
-{
-  fsal_status_t fsal_status;                       /* status when we unlink syncly */
-  fsal_status_t fsal_status2;                      /* status we got asyncly */
-  fsal_attrib_list_t parentdir_attributes_new;     /* parentdir attributes we compute asyncly */
-  fsal_attrib_list_t * p_object_attributes;        /* object attributes; we have to see if it's a dir. */
-
-  /* sanity check */
-  if(!p_context || !p_parentdir_attributes || !pextra)
-	  MFSL_return(ERR_FSAL_INVAL, 0);
-
-  /* populate a new attrib_list with parentdir_attributes and see if we can guess the new attribs  */
-  memcpy(&parentdir_attributes_new, p_parentdir_attributes, sizeof(fsal_attrib_list_t));
-
-  /* get object attributes */
-  p_object_attributes = (fsal_attrib_list_t *) pextra;
-
-  /* if it's a directory, there is 1 link less to its parent dir */
-  if(p_object_attributes->type == FSAL_TYPE_DIR)
-	  parentdir_attributes_new.numlinks -= 1;
-
-#ifdef _USE_PROXY
-  /* PROXY sees filesize in octets */
-#else
-  parentdir_attributes_new.filesize -= 1;
-#endif
-  parentdir_attributes_new.ctime.seconds = (fsal_uint_t) time(NULL);
-  parentdir_attributes_new.ctime.nseconds = 0;
-  parentdir_attributes_new.mtime.seconds = parentdir_attributes_new.ctime.seconds;
-  parentdir_attributes_new.mtime.nseconds = parentdir_attributes_new.ctime.nseconds;
-  /* end populate */
-
-
-  /* check in cache for rights */
-  fsal_status2 = FSAL_unlink_access(p_context, p_parentdir_attributes, p_object_attributes);
-
-  /* check rights directly */
-  fsal_status = FSAL_unlink(&parentdir_handle->handle,
-  		  p_object_name, 
-		  p_context, 
-		  p_parentdir_attributes
-		  );
-
-  /* Does status match? 'cause it should */
-  if ((fsal_status2.major != fsal_status.major) || (fsal_status2.minor != fsal_status.minor))
-          LogCrit(COMPONENT_FSAL, "FSAL_unlink does not match with FSAL_unlink_access! (%u, %u) != (%u, %u)", 
-	  		  fsal_status.major, fsal_status.minor, 
-			  fsal_status2.major, fsal_status2.minor
-			  );
-
-  /* Does computed attributes match with reality? */
-  if (               (parentdir_attributes_new.filesize      != p_parentdir_attributes->filesize)
-  		  || (parentdir_attributes_new.numlinks      != p_parentdir_attributes->numlinks)
-		  || (parentdir_attributes_new.ctime.seconds != p_parentdir_attributes->ctime.seconds)
-		  )
-  	  LogCrit(COMPONENT_FSAL, "Attributes don't match! filesize: %llu %llu ; numlinks: %lu %lu ; ctime: %u.%u %u.%u",
-	  		  parentdir_attributes_new.filesize, p_parentdir_attributes->filesize,
-			  (unsigned long) parentdir_attributes_new.numlinks, (unsigned long) p_parentdir_attributes->numlinks,
-			  parentdir_attributes_new.ctime.seconds, parentdir_attributes_new.ctime.nseconds,
-			  p_parentdir_attributes->ctime.seconds, p_parentdir_attributes->ctime.nseconds
-			  );
-
-  return fsal_status;
-}                               /* MFSL_unlink */
 
 fsal_status_t MFSL_mknode(mfsl_object_t * parentdir_handle,     /* IN */
                           fsal_name_t * p_node_name,    /* IN */
