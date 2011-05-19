@@ -67,11 +67,13 @@ fsal_status_t MFSL_async_post(mfsl_async_op_desc_t * p_operation_description /* 
     LRU_entry_t  * p_lru_entry = NULL;
     LRU_status_t   lru_status;
 
+    SetNameFunction("MFSL_async_post");
+
     /* Sanitize */
     if(!p_operation_description)
         MFSL_return(ERR_FSAL_FAULT, 0);
 
-    LogFullDebug(COMPONENT_MFSL, "Posting operation (%u, %s) to dispatcher.",
+    LogDebug(COMPONENT_MFSL, "Posting operation (%u, %s) to dispatcher.",
             p_operation_description->op_type,
             mfsl_async_op_name[p_operation_description->op_type]);
 
@@ -81,6 +83,9 @@ fsal_status_t MFSL_async_post(mfsl_async_op_desc_t * p_operation_description /* 
     if((p_lru_entry = LRU_new_entry(dispatcher_lru, &lru_status)) == NULL)
     {
         LogMajor(COMPONENT_MFSL,"Impossible to post async operation in LRU dispatch list.");
+
+        V(dispatcher_lru_mutex);
+
         MFSL_return(ERR_FSAL_SERVERFAULT, (int)lru_status);
     }
 
@@ -88,7 +93,14 @@ fsal_status_t MFSL_async_post(mfsl_async_op_desc_t * p_operation_description /* 
     p_lru_entry->buffdata.pdata = (caddr_t) p_operation_description;
     p_lru_entry->buffdata.len   = sizeof(mfsl_async_op_desc_t);
 
+    /* Make it valid */
+    p_lru_entry->valid_state = LRU_ENTRY_VALID;
+
     V(dispatcher_lru_mutex);
+
+    LogDebug(COMPONENT_MFSL, "Operation (%u, %s) posted to dispatcher.",
+            p_operation_description->op_type,
+            mfsl_async_op_name[p_operation_description->op_type]);
 
     MFSL_return(ERR_FSAL_NO_ERROR, 0);
 }
@@ -106,18 +118,54 @@ void * mfsl_async_dispatcher_thread(void * arg)
     mfsl_async_op_desc_t * current_async_operation;
     LRU_entry_t          * current_lru_entry;
     LRU_entry_t          * synclet_lru_entry;
-    LRU_status_t           lru_status;
+    LRU_status_t           lru_status;             /* Used when adding an entry in a LRU */
     unsigned int           chosen_synclet;
     struct timeval         current_time;
     struct timeval         delta_time;
     int                    passcounter = 0;
+    int                    rc = 0;                 /* Used for BuddyInit */
 
+    SetNameFunction("mfsl_async_dispatcher_thread");
+
+    /*************************
+     *    Initialisation
+     *************************/
+    LogEvent(COMPONENT_MFSL, "Dispatcher initialisation.");
+
+    /* Initialize Memory */
+#ifndef _NO_BUDDY_SYSTEM
+    if((rc = BuddyInit(NULL)) != BUDDY_SUCCESS)
+    {
+        /* Failed init */
+        LogCrit(COMPONENT_MFSL, "Memory manager could not be initialized, exiting...");
+        exit(1);
+    }
+    LogEvent(COMPONENT_MFSL, "Memory manager successfully initialized.");
+#endif
+
+    /* Initialize LRU */
+    if(pthread_mutex_init(&dispatcher_lru_mutex, NULL) != 0)
+    {
+        LogCrit(COMPONENT_MFSL, "Impossible to initialize dispatcher_lru_mutex.");
+        exit(1);
+    }
+
+    if((dispatcher_lru = LRU_Init(mfsl_param->lru_param, &lru_status)) == NULL)
+    {
+        LogCrit(COMPONENT_MFSL, "Impossible to initialize dispatcher_lru.");
+        exit(1);
+    }
+
+    /*************************
+     *         Work
+     *************************/
     LogEvent(COMPONENT_MFSL, "Dispatcher starts.");
 
     /* Dispatcher loop. */
     while(!end_of_mfsl)
     {
         /* Sleep some time */
+        /** @todo: make this a parameter */
         usleep(60000);
 
         /* Get current time */
@@ -125,7 +173,7 @@ void * mfsl_async_dispatcher_thread(void * arg)
         {
             /* Could'not get time of day... */
             LogCrit(COMPONENT_MFSL, "Cannot get time of day...");
-            continue; /* @todo: We should probably exit here. */
+            exit(1);
         }
 
         /* Loop on dispatcher_lru */
@@ -149,9 +197,12 @@ void * mfsl_async_dispatcher_thread(void * arg)
                 if(delta_time.tv_usec < mfsl_param->async_window_sec)
                     break;
 
+                LogDebug(COMPONENT_MFSL, "Found an operation to process: %p.", (caddr_t) current_async_operation);
+
                 /* Choose a synclet to operate on */
                 chosen_synclet = MFSL_async_choose_synclet(current_async_operation);
-                /* @todo: copy this information in current_async_operation? */
+                /* @todo: copy this information in current_async_operation? 
+                 * yes, scheduling in mind */
 
                 /* Insert the operation in this synclet's lru */
                 P(synclet_data[chosen_synclet].mutex_op_lru);
@@ -166,6 +217,7 @@ void * mfsl_async_dispatcher_thread(void * arg)
 
                 synclet_lru_entry->buffdata.pdata = current_lru_entry->buffdata.pdata;
                 synclet_lru_entry->buffdata.len   = current_lru_entry->buffdata.len;
+                synclet_lru_entry->valid_state    = LRU_ENTRY_VALID;
 
                 V(synclet_data[chosen_synclet].mutex_op_lru);
 
@@ -213,21 +265,15 @@ void * mfsl_async_dispatcher_thread(void * arg)
 fsal_status_t MFSL_async_dispatcher_init(void * arg)
 {
     pthread_attr_t dispatcher_thread_attr; /* Thread attributes */
-    LRU_status_t   lru_status;
     int            rc = 0;
 
-    LogEvent(COMPONENT_MFSL, "Dispatcher initialisation.");
+    SetNameFunction("MFSL_async_dispatcher_init");
+
+    LogEvent(COMPONENT_MFSL, "Dispatcher creation.");
 
     pthread_attr_init(&dispatcher_thread_attr);
     pthread_attr_setscope(&dispatcher_thread_attr, PTHREAD_SCOPE_SYSTEM);
     pthread_attr_setdetachstate(&dispatcher_thread_attr, PTHREAD_CREATE_JOINABLE);
-
-    /* Initialize LRU */
-    if(pthread_mutex_init(&dispatcher_lru_mutex, NULL) != 0)
-        MFSL_return(ERR_FSAL_INVAL, 0); /* @todo: return SERVERFAULT! */
-
-    if((dispatcher_lru = LRU_Init(mfsl_param->lru_param, &lru_status)) == NULL)
-        MFSL_return(ERR_FSAL_INVAL, (int) lru_status); /* @todo: return SERVERFAULT! */
 
     if((rc = pthread_create(&dispatcher_thread,
                             &dispatcher_thread_attr,
