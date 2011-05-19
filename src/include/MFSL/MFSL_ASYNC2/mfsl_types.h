@@ -50,7 +50,7 @@
  * labels in the config file
  */
 
-#define CONF_LABEL_MFSL_ASYNC2          "MFSL_ASYNC2"
+#define CONF_LABEL_MFSL_ASYNC2          "MFSL_ASYNC"
 
 /* other includes */
 #include <sys/types.h>
@@ -63,12 +63,12 @@
 
 typedef struct mfsl_parameter__
 {
-    unsigned int nb_pre_async_op_desc; /**< Number of preallocated Async Op descriptors    */
-    unsigned int nb_synclet;           /**< Number of synclet to be used                   */
-    unsigned int async_window_sec;     /**< Asynchronous Task Dispatcher Window (seconds)  */
-    unsigned int async_window_usec;    /**< Asynchronous Task Dispatcher Window (useconds) */
-    unsigned int nb_before_gc;         /**< Numbers of calls before LRU invalide GC        */
-    LRU_parameter_t lru_param;         /**< Parameter to LRU for async op                  */
+    unsigned int    nb_pre_async_op_desc; /**< Number of preallocated Async Op descriptors    */
+    unsigned int    nb_synclet;           /**< Number of synclet to be used                   */
+    unsigned int    nb_before_gc;         /**< Numbers of calls before LRU invalide GC        */
+    long int        async_window_sec;     /**< Asynchronous Task Dispatcher Window (seconds)  */
+    long int        async_window_usec;    /**< Asynchronous Task Dispatcher Window (useconds) */
+    LRU_parameter_t lru_param;            /**< Parameter to LRU for async op                  */
 } mfsl_parameter_t;
 
 typedef struct mfsl_context__
@@ -178,6 +178,7 @@ typedef struct mfsl_async_op_desc__
     mfsl_async_op_type_t   op_type;
     mfsl_async_op_args_t   op_args;
     mfsl_async_op_res_t    op_res;
+    mfsl_async_op_res_t    op_guessed;
     mfsl_object_t        * op_mobject;
     fsal_status_t (*op_func) (struct mfsl_async_op_desc__ *);
     fsal_op_context_t      fsal_op_context;
