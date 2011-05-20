@@ -136,15 +136,33 @@ typedef struct mfsl_async_op_unlink_res__
     fsal_attrib_list_t * parentdir_attributes;
 } mfsl_async_op_unlink_res_t;
 
+/* link */
+typedef struct mfsl_async_op_link_args__
+{
+    fsal_handle_t      target_handle;
+    fsal_handle_t      dir_handle;
+    fsal_name_t        link_name;
+    fsal_op_context_t  context;
+    fsal_attrib_list_t linked_object_attributes;
+} mfsl_async_op_link_args_t;
+
+typedef struct mfsl_async_op_link_res__
+{
+    fsal_attrib_list_t linked_object_attributes;
+} mfsl_async_op_link_res_t;
+
+
 /* general */
 typedef union mfsl_async_op_args__
 {
     mfsl_async_op_unlink_args_t unlink;
+    mfsl_async_op_link_args_t   link;
 } mfsl_async_op_args_t;
 
 typedef union mfsl_async_op_res__
 {
     mfsl_async_op_unlink_res_t  unlink;
+    mfsl_async_op_link_res_t    link;
 } mfsl_async_op_res_t;
 
 typedef enum mfsl_async_op_type__
@@ -175,15 +193,15 @@ static const char *mfsl_async_op_name[] =
 
 typedef struct mfsl_async_op_desc__
 {
-    struct timeval         op_time;
-    mfsl_async_op_type_t   op_type;
-    mfsl_async_op_args_t   op_args;
-    mfsl_async_op_res_t    op_res;
-    mfsl_async_op_res_t    op_guessed;
+    struct timeval         op_time;    /* date of the operation */
+    mfsl_async_op_type_t   op_type;    /* type of the operation */
+    mfsl_async_op_args_t   op_args;    /* arguments to pass to operation function */
+    mfsl_async_op_res_t    op_res;     /* will contain results of the operation */
+    mfsl_async_op_res_t    op_guessed; /* what we computed, to check */
     mfsl_object_t        * op_mobject;
-    fsal_status_t (*op_func) (struct mfsl_async_op_desc__ *);
+    fsal_status_t (*op_func) (struct mfsl_async_op_desc__ *); /* function to apply on the operation */
     fsal_op_context_t      fsal_op_context;
-    caddr_t                ptr_mfsl_context;
+    caddr_t                ptr_mfsl_context; /* pointer tothe mfsl_context, used in synclet */
     unsigned int           related_synclet_index;
 } mfsl_async_op_desc_t;
 
