@@ -105,14 +105,16 @@ typedef struct mfsl_synclet_context__
 
 typedef struct mfsl_synclet_data__
 {
-    unsigned int             index;             /* Index of the synclet related to this data */
-    pthread_cond_t           op_condvar;        /**/
-    pthread_mutex_t          mutex_op_condvar;  /**/
-    fsal_op_context_t        root_fsal_context; /**/
-    mfsl_synclet_context_t   synclet_context;   /**/
-    pthread_mutex_t          mutex_op_lru;      /**/
-    unsigned int             passcounter;       /**/
-    LRU_list_t             * op_lru;            /**/
+    unsigned int             index;               /* Index of the synclet related to this data */
+    pthread_cond_t           op_condvar;          /**/
+    pthread_mutex_t          mutex_op_condvar;    /**/
+    fsal_op_context_t        root_fsal_context;   /**/
+    mfsl_synclet_context_t   synclet_context;     /**/
+    pthread_mutex_t          mutex_op_lru;        /* Mutex that owns the operations_lru */
+    pthread_mutex_t          mutex_failed_op_lru; /* Mutex that owns the failed_operations_lru */
+    unsigned int             passcounter;         /**/
+    LRU_list_t             * op_lru;              /* This list contains the operation to be processed by the current synclet */
+    LRU_list_t             * failed_op_lru;       /* This list contains the operation that failed to be processed by the current synclet */
 } mfsl_synclet_data_t;
 
 fsal_status_t MFSL_async_dispatcher_init(void * arg);

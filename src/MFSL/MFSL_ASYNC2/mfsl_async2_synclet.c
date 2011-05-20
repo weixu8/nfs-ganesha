@@ -65,6 +65,8 @@ fsal_status_t MFSL_async_process_async_op(mfsl_async_op_desc_t * p_async_op_desc
 {
     mfsl_context_t * p_mfsl_context;
     fsal_status_t    fsal_status;
+    int              max_tries  = 2;  /* We will retry once if possible */
+    int              try_number = 1;  /* First try */
 
     SetNameFunction("MFSL_async_process_async_op");
 
@@ -72,24 +74,67 @@ fsal_status_t MFSL_async_process_async_op(mfsl_async_op_desc_t * p_async_op_desc
     if(!p_async_op_desc)
         MFSL_return(ERR_FSAL_FAULT, 0);
 
-    LogDebug(COMPONENT_MFSL, "Processing operation (%u, %s).",
-            p_async_op_desc->op_type,
-            mfsl_async_op_name[p_async_op_desc->op_type]);
+    fsal_status.major = 0;
+    fsal_status.minor = 0;
 
-    /* Call operation on data */
-    fsal_status = (p_async_op_desc->op_func) (p_async_op_desc);
+    /* Try the operation */
+    while(  (  (try_number == 1) || ( FSAL_IS_ERROR(fsal_status) && fsal_is_retryable(fsal_status) )  )
+            && (try_number <= max_tries)  )
+    {
+        /* if it's not the first try, sleep for a while */
+        if(try_number > 1)
+            sleep(1); /** \todo make this a parameter */
 
-    /** @todo: should we return status? */
-    if(FSAL_IS_ERROR(fsal_status))
-        LogMajor(COMPONENT_MFSL, "Impossible to process: op_type=%u %s : error (%u, %u)",
-                p_async_op_desc->op_type, mfsl_async_op_name[p_async_op_desc->op_type],
-                fsal_status.major, fsal_status.minor);
+        LogDebug(COMPONENT_MFSL, "Processing operation (%u, %s). Try #%d.",
+                p_async_op_desc->op_type,
+                mfsl_async_op_name[p_async_op_desc->op_type],
+                try_number);
 
-    /** @todo: check if retryable and retry if yes */
+        /* Call operation on data */
+        fsal_status = (p_async_op_desc->op_func) (p_async_op_desc);
+
+        /* Don't forget to increment... */
+        try_number += 1;
+    }
 
     /** @todo: check the results with computed ones.
      *  update the cache_inode if different (needs some way to call cache_inode)
      * */
+
+    if(FSAL_IS_ERROR(fsal_status))
+    {
+        /* Hopefully this should never happen. */
+        LRU_entry_t    * failed_op_entry; /* will contain a failed_op */
+        LRU_status_t     lru_status;
+
+        LogMajor(COMPONENT_MFSL, "Impossible to process: op_type=%u %s : error (%u, %u)",
+                p_async_op_desc->op_type, mfsl_async_op_name[p_async_op_desc->op_type],
+                fsal_status.major, fsal_status.minor);
+
+        /* Post this operation in a dedicated LRU, for debug. */
+        P(synclet_data[p_async_op_desc->related_synclet_index].mutex_failed_op_lru);
+
+        failed_op_entry = LRU_new_entry(synclet_data[p_async_op_desc->related_synclet_index].failed_op_lru, &lru_status);
+        if(!failed_op_entry)
+        {
+            LogCrit(COMPONENT_MFSL, "Impossible to get an entry in failed_op_lru for synclet %d.",
+                    p_async_op_desc->related_synclet_index);
+        }
+
+        failed_op_entry->buffdata.pdata = (caddr_t) p_async_op_desc;
+        failed_op_entry->buffdata.len   = sizeof(mfsl_async_op_desc_t);
+        failed_op_entry->valid_state    = LRU_ENTRY_VALID;
+
+        V(synclet_data[p_async_op_desc->related_synclet_index].mutex_failed_op_lru);
+
+        /* Return the status */
+        MFSL_return(fsal_status.major, fsal_status.minor);
+    }
+
+    /* Everything's OK. */
+    LogDebug(COMPONENT_MFSL, "Operation (%u, %s) processed",
+            p_async_op_desc->op_type,
+            mfsl_async_op_name[p_async_op_desc->op_type]);
 
     /* Free the previously allocated structures */
     p_mfsl_context = (mfsl_context_t *) p_async_op_desc->ptr_mfsl_context;
@@ -97,10 +142,6 @@ fsal_status_t MFSL_async_process_async_op(mfsl_async_op_desc_t * p_async_op_desc
     P(p_mfsl_context->lock);
     ReleaseToPool(p_async_op_desc, &p_mfsl_context->pool_async_op);
     V(p_mfsl_context->lock);
-
-    LogDebug(COMPONENT_MFSL, "Operation (%u, %s) processed",
-            p_async_op_desc->op_type,
-            mfsl_async_op_name[p_async_op_desc->op_type]);
 
     MFSL_return(ERR_FSAL_NO_ERROR, 0);
 }
@@ -152,8 +193,8 @@ void * mfsl_async_synclet_thread(void * arg)
     /*************************
      *     Initialisation
      *************************/
-    /* Initialize Memory */
 #ifndef _NO_BUDDY_SYSTEM
+    /* Initialize Memory */
     if((rc = BuddyInit(NULL)) != BUDDY_SUCCESS)
     {
         /* Failed init */
@@ -189,7 +230,15 @@ void * mfsl_async_synclet_thread(void * arg)
 
         if((synclet_data[i].op_lru = LRU_Init(mfsl_param->lru_param, &lru_status)) == NULL)
         {
-            LogCrit(COMPONENT_MFSL, "Impossible to initialize op_lru for synclet %d. lru_status: %d", i, (int) lru_status);
+            LogCrit(COMPONENT_MFSL, "Impossible to initialize op_lru for synclet %d. lru_status: %d",
+                    i, (int) lru_status);
+            exit(1);
+        }
+
+        if((synclet_data[i].failed_op_lru = LRU_Init(mfsl_param->lru_param, &lru_status)) == NULL)
+        {
+            LogCrit(COMPONENT_MFSL, "Impossible to initialize failed_op_lru for synclet %d. lru_status: %d",
+                    i, (int) lru_status);
             exit(1);
         }
 
