@@ -43,6 +43,8 @@
 
 /* We want to use memcpy() */
 #include <string.h>
+/* We want to use gettimeofday() */
+#include <sys/time.h>
 
 /******************************************************
  *              Common Filesystem calls.
@@ -101,22 +103,24 @@ fsal_status_t MFSL_unlink(mfsl_object_t      * parentdir_handle,       /* IN */
     SetNameFunction("MFSL_unlink");
 
     /* Sanity checks
-     * */
+     ***************/
     if(!p_context || !p_parentdir_attributes || !pextra)
 	    MFSL_return(ERR_FSAL_FAULT, 0);
 
-    /* get object attributes */
+    /* pextra contains object's attributes */
     p_object_attributes = (fsal_attrib_list_t *) pextra;
 
-    /* Check permissions 
-     * */
+
+    /* Asynchronous check
+     ********************/
     fsal_status = FSAL_unlink_access(p_context, p_parentdir_attributes, p_object_attributes);
 
     if(FSAL_IS_ERROR(fsal_status))
         MFSL_return(fsal_status.major, 0);
 
-    /* Construct the asynchronous operation
-     * */
+
+    /* Asynchronous operation description construction
+     *************************************************/
     LogDebug(COMPONENT_MFSL, "Gets an asyncop from pool in context %p.", p_mfsl_context);
 
     GetFromPool(p_async_op_desc, &p_mfsl_context->pool_async_op, mfsl_async_op_desc_t);
@@ -134,9 +138,9 @@ fsal_status_t MFSL_unlink(mfsl_object_t      * parentdir_handle,       /* IN */
         exit(1);
     }
 
-    /* Guess attributes
-     * */
 
+    /* Guess attributes
+     ******************/
     /* populate a new attrib_list with parentdir_attributes and see if we can guess the new attribs  */
     memcpy(&parentdir_attributes_guessed, p_parentdir_attributes, sizeof(fsal_attrib_list_t));
     memcpy(&parentdir_attributes_old,     p_parentdir_attributes, sizeof(fsal_attrib_list_t));
@@ -151,12 +155,14 @@ fsal_status_t MFSL_unlink(mfsl_object_t      * parentdir_handle,       /* IN */
     #else
     parentdir_attributes_guessed.filesize -= 1;
     #endif
-    parentdir_attributes_guessed.ctime.seconds  = p_async_op_desc->op_time.tv_sec;
-    parentdir_attributes_guessed.ctime.nseconds = p_async_op_desc->op_time.tv_usec;
+    parentdir_attributes_guessed.ctime.seconds  = time(NULL);
+    parentdir_attributes_guessed.ctime.nseconds = 0;
     parentdir_attributes_guessed.mtime.seconds  = parentdir_attributes_guessed.ctime.seconds;
     parentdir_attributes_guessed.mtime.nseconds = parentdir_attributes_guessed.ctime.nseconds;
 
-    /* populate operation description */
+
+    /* Populate asynchronous operation description
+     *********************************************/
     p_async_op_desc->op_type                                = MFSL_ASYNC_OP_UNLINK;
     p_async_op_desc->op_args.unlink.parentdir_handle        = &parentdir_handle->handle;
     p_async_op_desc->op_args.unlink.p_object_name           = p_object_name;
@@ -169,15 +175,17 @@ fsal_status_t MFSL_unlink(mfsl_object_t      * parentdir_handle,       /* IN */
     p_async_op_desc->fsal_op_context                        = *p_context;
     p_async_op_desc->ptr_mfsl_context                       = (caddr_t) p_mfsl_context;
 
-    /* Post the asynchronous operation to the dispatcher
-     * */
+
+    /* Post the asynchronous operation description to the dispatcher
+     ***************************************************************/
     fsal_status = MFSL_async_post(p_async_op_desc);
 
     if(FSAL_IS_ERROR(fsal_status))
         return fsal_status;
 
+
     /* Return attributes and status
-     * */
+     ******************************/
     *p_parentdir_attributes = parentdir_attributes_guessed;
 
     MFSL_return(ERR_FSAL_NO_ERROR, 0);
