@@ -153,18 +153,38 @@ typedef struct mfsl_async_op_link_res__
     fsal_attrib_list_t linked_object_attributes;
 } mfsl_async_op_link_res_t;
 
+/* rename */
+typedef struct mfsl_async_op_rename_args__
+{
+    fsal_handle_t      src_parentdir_handle;
+    fsal_name_t        src_name;
+    fsal_handle_t      tgt_parentdir_handle;
+    fsal_name_t        tgt_name;
+    fsal_op_context_t  context;
+    fsal_attrib_list_t src_dir_attributes;
+    fsal_attrib_list_t tgt_dir_attributes;
+} mfsl_async_op_rename_args_t;
+
+typedef struct mfsl_async_op_rename_res__
+{
+    fsal_attrib_list_t src_dir_attributes;
+    fsal_attrib_list_t tgt_dir_attributes;
+} mfsl_async_op_rename_res_t;
+
 
 /* general */
 typedef union mfsl_async_op_args__
 {
     mfsl_async_op_unlink_args_t unlink;
     mfsl_async_op_link_args_t   link;
+    mfsl_async_op_rename_args_t rename;
 } mfsl_async_op_args_t;
 
 typedef union mfsl_async_op_res__
 {
-    mfsl_async_op_unlink_res_t  unlink;
-    mfsl_async_op_link_res_t    link;
+    mfsl_async_op_unlink_res_t unlink;
+    mfsl_async_op_link_res_t   link;
+    mfsl_async_op_rename_res_t rename;
 } mfsl_async_op_res_t;
 
 typedef enum mfsl_async_op_type__
