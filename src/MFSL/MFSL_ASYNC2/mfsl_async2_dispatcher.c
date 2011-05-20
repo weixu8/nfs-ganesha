@@ -41,6 +41,9 @@
 #include "mfsl.h"
 #include "common_utils.h"
 
+/* We want to use gettimeofday() */
+#include <sys/time.h>
+
 
 #ifndef _USE_SWIG
 
