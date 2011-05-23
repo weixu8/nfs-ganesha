@@ -154,7 +154,7 @@ fsal_status_t MFSL_link(mfsl_object_t      * target_handle,  /* IN */
     /* Guess attributes
      ******************/
     memcpy((void *) &p_async_op_desc->op_guessed.link.linked_object_attributes,
-           (void *) p_attr_obj,     /** \todo this structure may be not prefilled correctly */
+           (void *) p_attr_obj,
            sizeof(fsal_attrib_list_t));
 
     p_async_op_desc->op_guessed.link.linked_object_attributes.numlinks      +=1;
