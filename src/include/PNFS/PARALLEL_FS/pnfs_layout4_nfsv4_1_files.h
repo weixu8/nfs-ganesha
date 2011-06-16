@@ -59,53 +59,28 @@
 #include "nfs23.h"
 #include "nfs4.h"
 
-#define NB_MAX_PNFS_DS 2
-#define PNFS_NFS4      4
-#define PNFS_SENDSIZE 32768
-#define PNFS_RECVSIZE 32768
+#include "PNFS/PARALLEL_FS/pnfs_layout4_nfsv4_1_files_types.h"
 
-#define PNFS_LAYOUTFILE_FILEHANDLE_MAX_LEN 128
-#define PNFS_LAYOUTFILE_PADDING_LEN  NFS4_OPAQUE_LIMIT
-#define PNFS_LAYOUTFILE_OWNER_LEN 128
-
-typedef struct pnfs_ds_parameter__
-{
-  unsigned int ipaddr;
-  unsigned short ipport;
-  unsigned int prognum;
-  char rootpath[MAXPATHLEN];
-  char ipaddr_ascii[MAXNAMLEN];
-  unsigned int id;
-  bool_t is_ganesha;
-} pnfs_ds_parameter_t;
-
-typedef struct pnfs_layoutfile_parameter__
-{
-  unsigned int stripe_size;
-  unsigned int stripe_width;
-  pnfs_ds_parameter_t ds_param[NB_MAX_PNFS_DS];
-} pnfs_layoutfile_parameter_t;
-
-
-typedef struct pnfs_client__
-{
-  unsigned int nb_ds;
-} pnfs_client_t;
-
-
-typedef struct pnfs_ds_loc__
-{
-  int nothing_right_now ;
-}  pnfs_ds_loc_t ;
-
-
-typedef struct pnfs_layoutfile_hints__
-{
-  int nothing_right_now ;
-} pnfs_ds_hints_t ;
 
 /* Mandatory functions */
+nfsstat4 pnfs_parallel_fs_getdevicelist( GETDEVICELIST4args * pargs, 
+				         compound_data_t   * data,
+				         GETDEVICELIST4res  * pres ) ;
 
-int pnfs_lustre_encode_getdeviceinfo(char *buff, unsigned int *plen);
-int pnfs_lustre_encode_layoutget( char * buffin, unsigned int *plenin,  char *buffout, unsigned int *plenout);
+nfsstat4 pnfs_parallel_fs_getdeviceinfo( GETDEVICEINFO4args * pargs,
+				         compound_data_t   * data,
+				         GETDEVICEINFO4res  * pres ) ;
+
+nfsstat4 pnfs_parallel_fs_layoutcommit( LAYOUTCOMMIT4args * pargs, 
+				        compound_data_t   * data,
+	    		                LAYOUTCOMMIT4res  * pres ) ;
+
+nfsstat4 pnfs_parallel_fs_layoutget( LAYOUTGET4args  * pargs, 
+				     compound_data_t * data,
+				     LAYOUTGET4res   * pres ) ;
+
+nfsstat4 pnfs_parallel_fs_layoutreturn( LAYOUTRETURN4args * pargs, 
+				        compound_data_t * data,
+				        LAYOUTRETURN4res  * pres ) ; 
+
 #endif                          /* _PNFS_LAYOUT4_NFSV4_1_FILES_H */
