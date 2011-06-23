@@ -124,7 +124,9 @@ fsal_status_t MFSL_unlink(mfsl_object_t      * parentdir_handle,       /* IN */
      *************************************************/
     LogDebug(COMPONENT_MFSL, "Gets an asyncop from pool in context %p.", p_mfsl_context);
 
+    P(p_mfsl_context->lock);
     GetFromPool(p_async_op_desc, &p_mfsl_context->pool_async_op, mfsl_async_op_desc_t);
+    V(p_mfsl_context->lock);
 
     if(p_async_op_desc == NULL)
     {
