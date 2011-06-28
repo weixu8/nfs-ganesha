@@ -63,19 +63,26 @@
 
 typedef struct mfsl_parameter__
 {
-    unsigned int    nb_pre_async_op_desc; /**< Number of preallocated Async Op descriptors      */
-    unsigned int    nb_synclet;           /**< Number of synclet to be used                     */
-    unsigned int    nb_before_gc;         /**< Numbers of calls before LRU invalide GC          */
-    long int        async_window_sec;     /**< Asynchronous Task Dispatcher Window (seconds)    */
-    long int        async_window_usec;    /**< Asynchronous Task Dispatcher Window (useconds)   */
-    unsigned int    ADT_sleep_time;       /**< Asynchronous Dispatcher Thread sleep time (usec) */
-    LRU_parameter_t lru_param;            /**< Parameter to LRU for async op                    */
+    unsigned int    nb_pre_async_op_desc;           /**< Number of preallocated Async Op descriptors      */
+    unsigned int    nb_synclet;                     /**< Number of synclet to be used                     */
+    unsigned int    nb_before_gc;                   /**< Numbers of calls before LRU invalide GC          */
+    long int        async_window_sec;               /**< Asynchronous Task Dispatcher Window (seconds)    */
+    long int        async_window_usec;              /**< Asynchronous Task Dispatcher Window (useconds)   */
+    unsigned int    ADT_sleep_time;                 /**< Asynchronous Dispatcher Thread sleep time (usec) */
+    unsigned int    nb_pre_create_dirs;             /**< The size of pre-created directories per synclet  */
+    unsigned int    nb_pre_create_files;            /**< The size of pre-created files per synclet        */
+    char            pre_create_obj_dir[MAXPATHLEN]; /**< Directory for pre-createed objects               */
+    LRU_parameter_t lru_param;                      /**< Parameter to LRU for async op                    */
+    /* Asynchronous Filler Thread */
+    unsigned int    AFT_low_watermark;
+    unsigned int    AFT_nb_fill_critical;
 } mfsl_parameter_t;
 
 typedef struct mfsl_context__
 {
-    struct prealloc_pool pool_async_op; /**< Asynchronous operations pool */
-    pthread_mutex_t lock;
+    struct prealloc_pool pool_async_op;     /* Asynchronous operations pool */
+    pthread_mutex_t      lock;
+    fsal_op_context_t    root_fsal_context; /* Credentials for root. Used by MFSL_create to manage precreated object. */
 } mfsl_context_t;
 
 typedef struct mfsl_object__
@@ -96,9 +103,15 @@ typedef struct mfsl_dirs_attributes__
 } mfsl_dirs_attributes_t;
 
 
-/**
- * Dispatcher and synclets specific functions
- * */
+/* Dispatcher, fillers and synclets specific functions
+ *****************************************************/
+typedef struct mfsl_precreated_object__
+{
+  mfsl_object_t      mobject;
+  fsal_name_t        filename;
+  fsal_attrib_list_t object_attributes;
+} mfsl_precreated_object_t;
+
 typedef struct mfsl_synclet_context__
 {
     pthread_mutex_t lock;
@@ -106,25 +119,61 @@ typedef struct mfsl_synclet_context__
 
 typedef struct mfsl_synclet_data__
 {
-    unsigned int             index;               /* Index of the synclet related to this data */
-    pthread_cond_t           op_condvar;          /**/
-    pthread_mutex_t          mutex_op_condvar;    /**/
-    fsal_op_context_t        root_fsal_context;   /**/
-    mfsl_synclet_context_t   synclet_context;     /**/
-    pthread_mutex_t          mutex_op_lru;        /* Mutex that owns the operations_lru */
-    pthread_mutex_t          mutex_failed_op_lru; /* Mutex that owns the failed_operations_lru */
-    unsigned int             passcounter;         /**/
-    LRU_list_t             * op_lru;              /* This list contains the operation to be processed by the current synclet */
-    LRU_list_t             * failed_op_lru;       /* This list contains the operation that failed to be processed by the current synclet */
+    unsigned int             index;                 /* Index of the synclet related to this data */
+    pthread_cond_t           op_condvar;            /* The condition the synclet is waiting for before wake up. */
+    pthread_mutex_t          mutex_op_condvar;      /* Mutex associated with previous condition. */
+    mfsl_synclet_context_t   synclet_context;       /**/
+    unsigned int             passcounter;           /* Number of loop made by the synclet. Used for garbage collect. */
+    /* async_op_desc management */
+    LRU_list_t             * op_lru;                /* This list contains the operation to be processed by the current synclet */
+    pthread_mutex_t          mutex_op_lru;          /* Mutex that owns the operations_lru */
+    LRU_list_t             * failed_op_lru;         /* This list contains the operation that failed to be processed by the current synclet */
+    pthread_mutex_t          mutex_failed_op_lru;   /* Mutex that owns the failed_operations_lru */
 } mfsl_synclet_data_t;
 
+typedef enum
+{
+    MFSL_FILE = 0,
+    MFSL_DIR
+} mfsl_object_type_t;
+
+typedef struct mfsl_filler_context__
+{
+    pthread_mutex_t lock;
+} mfsl_filler_context_t;
+
+typedef struct mfsl_filler_pool__
+{
+    LRU_list_t             * dirs_lru;                /* List of precreated directories */
+    pthread_mutex_t          mutex_dirs_lru;          /* Mutex that owns the dirs_lru */
+    LRU_list_t             * files_lru;               /* List of precreated directories */
+    pthread_mutex_t          mutex_files_lru;         /* Mutex that owns the files_lru */
+    fsal_op_context_t        root_fsal_context;       /* Credentials for root. Used by MFSL_create to manage precreated object. */
+    pthread_mutex_t          mutex_pool_objects;      /* to lock the pool */
+    struct prealloc_pool     pool_precreated_objects; /* Asynchronous operations pool */
+    fsal_handle_t            filler_pool_handle;      /* handle of filler local pool */
+    fsal_handle_t            dirs_pool_handle;        /* handle of precreated dirs */
+    fsal_handle_t            files_pool_handle;       /* handle of precreated files */
+} mfsl_filler_pool_t;
+
+typedef struct mfsl_filler_data__
+{
+    unsigned int             index;                   /* Index of the filler related to this data */
+    pthread_cond_t           watermark_condvar;       /* The condition the filler is waiting for before wake up. */
+    pthread_mutex_t          mutex_watermark_condvar; /* Mutex associated with previous condition. */
+    mfsl_filler_context_t    filler_context;          /**/
+    /* precreated objects management */
+    mfsl_filler_pool_t       precreated_object_pool;  /**/
+} mfsl_filler_data_t;
+
+
 fsal_status_t MFSL_async_dispatcher_init(void * arg);
+fsal_status_t MFSL_async_filler_init(void * arg);
 fsal_status_t MFSL_async_synclet_init(void * arg);
 
 
-/**
- * Operations management
- * */
+/* Operations management
+ ***********************/
 
 /* unlink */
 typedef struct mfsl_async_op_unlink_args__
