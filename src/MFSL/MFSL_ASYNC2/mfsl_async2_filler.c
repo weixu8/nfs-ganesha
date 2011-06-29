@@ -860,7 +860,7 @@ fsal_status_t MFSL_async_filler_init_objects()
  *
  * get a precreated object from a pool.
  */
-fsal_status_t MFSL_async_get_precreated_object(unsigned int filler_index, mfsl_object_type_t type, mfsl_precreated_object_t ** object)
+fsal_status_t MFSL_async_get_precreated_object(unsigned int filler_index, fsal_nodetype_t type, mfsl_precreated_object_t ** object)
 {
     fsal_status_t   fsal_status;
     LRU_entry_t   * current_lru_entry;
@@ -868,7 +868,7 @@ fsal_status_t MFSL_async_get_precreated_object(unsigned int filler_index, mfsl_o
 
     switch(type)
     {
-        case MFSL_FILE:
+        case FSAL_TYPE_FILE:
             /* Get first available entry */
             P(filler_data[filler_index].precreated_object_pool.mutex_files_lru);
             for(current_lru_entry=filler_data[filler_index].precreated_object_pool.files_lru->LRU;
@@ -917,7 +917,7 @@ fsal_status_t MFSL_async_get_precreated_object(unsigned int filler_index, mfsl_o
             V(filler_data[filler_index].precreated_object_pool.mutex_files_lru);
             break;
 
-        case MFSL_DIR:
+        case FSAL_TYPE_DIR:
             /* Get first available entry */
             P(filler_data[filler_index].precreated_object_pool.mutex_dirs_lru);
             for(current_lru_entry=filler_data[filler_index].precreated_object_pool.dirs_lru->LRU;
@@ -965,6 +965,8 @@ fsal_status_t MFSL_async_get_precreated_object(unsigned int filler_index, mfsl_o
             }
             V(filler_data[filler_index].precreated_object_pool.mutex_dirs_lru);
             break;
+        default:
+            MFSL_return(ERR_FSAL_INVAL, 0);
     }
 
     MFSL_return(ERR_FSAL_NO_ERROR, 0);

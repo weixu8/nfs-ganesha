@@ -131,12 +131,6 @@ typedef struct mfsl_synclet_data__
     pthread_mutex_t          mutex_failed_op_lru;   /* Mutex that owns the failed_operations_lru */
 } mfsl_synclet_data_t;
 
-typedef enum
-{
-    MFSL_FILE = 0,
-    MFSL_DIR
-} mfsl_object_type_t;
-
 typedef struct mfsl_filler_context__
 {
     pthread_mutex_t lock;
@@ -297,5 +291,12 @@ typedef struct mfsl_async_op_desc__
 fsal_status_t MFSL_async_post(mfsl_async_op_desc_t * p_operation_description);
 
 unsigned int MFSL_async_choose_synclet(mfsl_async_op_desc_t * candidate_async_op);
+
+/* Precreated files management
+ *****************************/
+/* Functions */
+fsal_status_t MFSL_async_get_precreated_object(unsigned int filler_index,           /* IN */
+                                               fsal_nodetype_t type,                /* IN */
+                                               mfsl_precreated_object_t ** object); /* IN/OUT */
 
 #endif                          /* _MFSL_ASYNC2_TYPES_H */
