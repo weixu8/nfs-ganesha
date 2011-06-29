@@ -96,6 +96,7 @@ fsal_status_t MFSL_setattrs(mfsl_object_t      * filehandle,        /* IN */
 {
 	fsal_status_t            fsal_status;
     mfsl_async_op_desc_t   * p_async_op_desc=NULL; /* asynchronous operation */
+    int                      chosen_synclet;
 
     SetNameFunction("MFSL_setattrs");
 
@@ -135,6 +136,11 @@ fsal_status_t MFSL_setattrs(mfsl_object_t      * filehandle,        /* IN */
         exit(1);
     }
 
+    /* Choose a synclet to operate on */
+    chosen_synclet = MFSL_async_choose_synclet(p_async_op_desc);
+
+    /* Keep in mind this index: it will be used by process_async_op and for scheduling */
+    p_async_op_desc->related_synclet_index = chosen_synclet;
 
     /* Guess attributes
      ******************/

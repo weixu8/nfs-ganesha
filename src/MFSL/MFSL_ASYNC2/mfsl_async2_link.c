@@ -102,7 +102,7 @@ fsal_status_t MFSL_link(mfsl_object_t      * target_handle,  /* IN */
 	mfsl_dirs_attributes_t * dirs_attrs;
 	fsal_attrib_list_t     * p_attr_srcdir;        /* given source directory attributes */
 	fsal_attrib_list_t     * p_attr_destdir;       /* given destination directory attributes */
-
+    int                      chosen_synclet;
     mfsl_async_op_desc_t   * p_async_op_desc=NULL; /* asynchronous operation */
 
     SetNameFunction("MFSL_link");
@@ -152,6 +152,11 @@ fsal_status_t MFSL_link(mfsl_object_t      * target_handle,  /* IN */
         exit(1);
     }
 
+    /* Choose a synclet to operate on */
+    chosen_synclet = MFSL_async_choose_synclet(p_async_op_desc);
+
+    /* Keep in mind this index: it will be used by process_async_op and for scheduling */
+    p_async_op_desc->related_synclet_index = chosen_synclet;
 
     /* Guess attributes
      ******************/
