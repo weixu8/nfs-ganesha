@@ -1145,8 +1145,19 @@ void * mfsl_async_filler_thread(void * arg)
             rc = pthread_cond_wait(&my_filler_data->watermark_condvar, &my_filler_data->mutex_watermark_condvar);
             if(rc != 0)
                 LogMajor(COMPONENT_MFSL, "pthread_cond_wait failed: %d.", rc);
+
+            /* Compute remaining objects again */
+            P(my_filler_data->precreated_object_pool.mutex_files_lru);
+            remaining_files = (my_filler_data->precreated_object_pool.files_lru->nb_entry - my_filler_data->precreated_object_pool.files_lru->nb_invalid);
+            V(my_filler_data->precreated_object_pool.mutex_files_lru);
+
+            P(my_filler_data->precreated_object_pool.mutex_dirs_lru);
+            remaining_dirs  = (my_filler_data->precreated_object_pool.dirs_lru->nb_entry  - my_filler_data->precreated_object_pool.dirs_lru->nb_invalid);
+            V(my_filler_data->precreated_object_pool.mutex_dirs_lru);
         }
         V(my_filler_data->mutex_watermark_condvar);
+
+        LogDebug(COMPONENT_MFSL, "Filler %d has been wake up.", my_filler_data->index);
 
         if(remaining_dirs < mfsl_param->AFT_low_watermark){
             /* We're below watermark, fill directories */
