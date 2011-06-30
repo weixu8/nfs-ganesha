@@ -7,11 +7,13 @@ libmfslasync2_la_SOURCES = mfsl_async2.c            \
                            mfsl_async2_init.c       \
                            mfsl_async2_read_conf.c  \
                            mfsl_async2_dispatcher.c \
+                           mfsl_async2_filler.c     \
                            mfsl_async2_synclet.c    \
                            mfsl_async2_unlink.c     \
                            mfsl_async2_link.c       \
                            mfsl_async2_rename.c     \
-                           mfsl_async2_setattrs.c
+                           mfsl_async2_setattrs.c   \
+                           mfsl_async2_mkdir.c
 
 libmfslasync2_la_LIBADD = $(FSAL_LIB)
 

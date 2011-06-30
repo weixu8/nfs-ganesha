@@ -111,6 +111,7 @@ fsal_status_t MFSL_rename(mfsl_object_t      * old_parentdir_handle, /* IN */
 	fsal_attrib_list_t attr_new_srcdir;
 	fsal_attrib_list_t attr_new_destdir;
 	fsal_attrib_list_t * attr_old_obj;
+    int                  chosen_synclet;
 
 	int samedirs;
 
@@ -144,7 +145,9 @@ fsal_status_t MFSL_rename(mfsl_object_t      * old_parentdir_handle, /* IN */
      *************************************************/
     LogDebug(COMPONENT_MFSL, "Gets an asyncop from pool in context %p.", p_mfsl_context);
 
+    P(p_mfsl_context->lock);
     GetFromPool(p_async_op_desc, &p_mfsl_context->pool_async_op, mfsl_async_op_desc_t);
+    V(p_mfsl_context->lock);
 
     if(p_async_op_desc == NULL)
     {
@@ -159,6 +162,11 @@ fsal_status_t MFSL_rename(mfsl_object_t      * old_parentdir_handle, /* IN */
         exit(1);
     }
 
+    /* Choose a synclet to operate on */
+    chosen_synclet = MFSL_async_choose_synclet(p_async_op_desc);
+
+    /* Keep in mind this index: it will be used by process_async_op and for scheduling */
+    p_async_op_desc->related_synclet_index = chosen_synclet;
 
     /* Guess attributes
      ******************/

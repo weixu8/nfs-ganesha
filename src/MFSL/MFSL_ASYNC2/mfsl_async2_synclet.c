@@ -50,6 +50,7 @@ extern unsigned int       end_of_mfsl; /* from mfsl_async_init.c */
 pthread_t           * synclet_thread;  /* Synclet Thread Array */
 mfsl_synclet_data_t * synclet_data;    /* Synclet Data Array */
 
+
 /**
  *
  * MFSL_async_process_async_op: processes an asynchronous operation.
@@ -166,6 +167,7 @@ unsigned int MFSL_async_choose_synclet(mfsl_async_op_desc_t * candidate_async_op
     return 0;
 }
 
+
 /**
  * mfsl_async_synclet_thread: thread used for asynchronous operation management.
  *
@@ -206,44 +208,43 @@ void * mfsl_async_synclet_thread(void * arg)
 
     LogEvent(COMPONENT_MFSL, "Synclets initialisation.");
 
-    for(i=0; i < mfsl_param->nb_synclet; i++)
+    /* Data initialisation
+     *********************/
+    LogDebug(COMPONENT_MFSL, "Initialisation of synclet number %d.", my_synclet_data->index);
+
+    if(pthread_cond_init(&synclet_data[my_synclet_data->index].op_condvar, NULL)        != 0)
     {
-        LogDebug(COMPONENT_MFSL, "Initialisation of synclet number %d.", i);
-
-        if(pthread_cond_init(&synclet_data[i].op_condvar, NULL)        != 0)
-        {
-            LogCrit(COMPONENT_MFSL, "Impossible to initialize op_condvar for synclet %d.", i);
-            exit(1);
-        }
-
-        if(pthread_mutex_init(&synclet_data[i].mutex_op_condvar, NULL) != 0)
-        {
-            LogCrit(COMPONENT_MFSL, "Impossible to initialize mutex_op_condvar for synclet %d.", i);
-            exit(1);
-        }
-
-        if(pthread_mutex_init(&synclet_data[i].mutex_op_lru, NULL)     != 0)
-        {
-            LogCrit(COMPONENT_MFSL, "Impossible to initialize mutex_op_lru for synclet %d.", i);
-            exit(1);
-        }
-
-        if((synclet_data[i].op_lru = LRU_Init(mfsl_param->lru_param, &lru_status)) == NULL)
-        {
-            LogCrit(COMPONENT_MFSL, "Impossible to initialize op_lru for synclet %d. lru_status: %d",
-                    i, (int) lru_status);
-            exit(1);
-        }
-
-        if((synclet_data[i].failed_op_lru = LRU_Init(mfsl_param->lru_param, &lru_status)) == NULL)
-        {
-            LogCrit(COMPONENT_MFSL, "Impossible to initialize failed_op_lru for synclet %d. lru_status: %d",
-                    i, (int) lru_status);
-            exit(1);
-        }
-
-        synclet_data[i].passcounter = 0;
+        LogCrit(COMPONENT_MFSL, "Impossible to initialize op_condvar for synclet %d.", my_synclet_data->index);
+        exit(1);
     }
+
+    if(pthread_mutex_init(&synclet_data[my_synclet_data->index].mutex_op_condvar, NULL) != 0)
+    {
+        LogCrit(COMPONENT_MFSL, "Impossible to initialize mutex_op_condvar for synclet %d.", my_synclet_data->index);
+        exit(1);
+    }
+
+    if(pthread_mutex_init(&synclet_data[my_synclet_data->index].mutex_op_lru, NULL)     != 0)
+    {
+        LogCrit(COMPONENT_MFSL, "Impossible to initialize mutex_op_lru for synclet %d.", my_synclet_data->index);
+        exit(1);
+    }
+
+    if((synclet_data[my_synclet_data->index].op_lru = LRU_Init(mfsl_param->lru_param, &lru_status)) == NULL)
+    {
+        LogCrit(COMPONENT_MFSL, "Impossible to initialize op_lru for synclet %d. lru_status: %d",
+                my_synclet_data->index, (int) lru_status);
+        exit(1);
+    }
+
+    if((synclet_data[my_synclet_data->index].failed_op_lru = LRU_Init(mfsl_param->lru_param, &lru_status)) == NULL)
+    {
+        LogCrit(COMPONENT_MFSL, "Impossible to initialize failed_op_lru for synclet %d. lru_status: %d",
+                my_synclet_data->index, (int) lru_status);
+        exit(1);
+    }
+
+    synclet_data[my_synclet_data->index].passcounter = 0;
 
 
     /*************************

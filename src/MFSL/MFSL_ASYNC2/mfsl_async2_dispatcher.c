@@ -201,11 +201,8 @@ void * mfsl_async_dispatcher_thread(void * arg)
 
                 LogDebug(COMPONENT_MFSL, "Found an operation to process: %p.", (caddr_t) current_async_operation);
 
-                /* Choose a synclet to operate on */
-                chosen_synclet = MFSL_async_choose_synclet(current_async_operation);
-
-                /* Keep in mind this index: it will be used by process_async_op and for scheduling */
-                current_async_operation->related_synclet_index = chosen_synclet;
+                /* Retrieve previouslychosen synclet */
+                chosen_synclet = current_async_operation->related_synclet_index;
 
                 /* Insert the operation in this synclet's lru */
                 P(synclet_data[chosen_synclet].mutex_op_lru);

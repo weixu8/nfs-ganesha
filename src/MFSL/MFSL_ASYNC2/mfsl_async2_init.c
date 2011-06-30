@@ -46,7 +46,8 @@
 #ifndef _USE_SWIG
 
 mfsl_parameter_t * mfsl_param;          /* MFSL parameters */
-unsigned int       end_of_mfsl = FALSE; /* Dispatcher and Synclets check this to stop */
+unsigned int       end_of_mfsl = FALSE; /* Dispatcher, fillers and synclets check this to stop */
+
 
 /**
  * MFSL_Init: Inits the MFSL layer.
@@ -59,7 +60,7 @@ unsigned int       end_of_mfsl = FALSE; /* Dispatcher and Synclets check this to
  */
 fsal_status_t MFSL_Init(mfsl_parameter_t * init_info    /* IN */)
 {
-	fsal_status_t status;;
+    fsal_status_t status;;
 
     SetNameFunction("MFSL_Init");
 
@@ -77,17 +78,28 @@ fsal_status_t MFSL_Init(mfsl_parameter_t * init_info    /* IN */)
     memcpy(mfsl_param, init_info, sizeof(mfsl_parameter_t));
     /*mfsl_param = init_info;*/
 
-    /* Initializes and launch dispatcher */
+
+    /* Initializes and launch dispatcher
+     ***********************************/
     status = MFSL_async_dispatcher_init(NULL);
     if(FSAL_IS_ERROR(status))
         MFSL_return(status.major, 0);
 
-    /* Initializes and launch synclets */
+
+    /* Initializes and launch filler
+     *******************************/
+    status = MFSL_async_filler_init(NULL);
+    if(FSAL_IS_ERROR(status))
+        MFSL_return(status.major, 0);
+
+
+    /* Initializes and launch synclets
+     *********************************/
     status = MFSL_async_synclet_init(NULL);
     if(FSAL_IS_ERROR(status))
         MFSL_return(status.major, 0);
 
-	MFSL_return(ERR_FSAL_NO_ERROR, 0);
+    MFSL_return(ERR_FSAL_NO_ERROR, 0);
 } /* MFSL_Init */
 
 /**
@@ -105,32 +117,76 @@ fsal_status_t MFSL_Init(mfsl_parameter_t * init_info    /* IN */)
 fsal_status_t MFSL_GetContext(mfsl_context_t    * pcontext,
                               fsal_op_context_t * pfsal_context)
 {
-	fsal_status_t status;
+    fsal_export_context_t fsal_export_context;
+    fsal_status_t         fsal_status;
 
     SetNameFunction("MFSL_GetContext");
 
-    /* Sanitize */
+
+    /* Sanitize
+     **********/
     if(!pcontext || !pfsal_context)
         MFSL_return(ERR_FSAL_FAULT, 0);
 
     LogDebug(COMPONENT_MFSL, "Getting context %p.", pcontext);
 
+
+    /* Init mutex
+     ************/
     if(pthread_mutex_init(&pcontext->lock, NULL) != 0)
         MFSL_return(ERR_FSAL_SERVERFAULT, errno);
 
-    /* Creates the pool of asynchronous operations */
+
+    /* Get root credentials
+     **********************/
+    fsal_status = FSAL_BuildExportContext(&fsal_export_context, NULL, NULL);
+    if(FSAL_IS_ERROR(fsal_status))
+    {
+        /* Failed init */
+        LogCrit(COMPONENT_MFSL,"MFSL_GetContext could not build export context.");
+        MFSL_return(fsal_status.major, fsal_status.minor);
+    }
+
+    LogDebug(COMPONENT_MFSL, "Export context built.");
+
+    fsal_status = FSAL_InitClientContext(&pcontext->root_fsal_context);
+    if(FSAL_IS_ERROR(fsal_status))
+    {
+        /* Failed init */
+        LogCrit(COMPONENT_MFSL,"MFSL_GetContext could not build thread context.");
+        MFSL_return(fsal_status.major, fsal_status.minor);
+    }
+
+    LogDebug(COMPONENT_MFSL, "Client context inited.");
+
+    fsal_status = FSAL_GetClientContext(&pcontext->root_fsal_context,
+                    &fsal_export_context, 0, 0, NULL, 0);
+    if(FSAL_IS_ERROR(fsal_status))
+    {
+        /* Failed init */
+        LogCrit(COMPONENT_MFSL,"MFSL_GetContext could not build client context.");
+        MFSL_return(fsal_status.major, fsal_status.minor);
+    }
+
+    LogDebug(COMPONENT_MFSL, "Got root context.");
+
+
+    /* Creates the pool of asynchronous operations
+     *********************************************/
     MakePool(&pcontext->pool_async_op, mfsl_param->nb_pre_async_op_desc, mfsl_async_op_desc_t, NULL, NULL);
 
-    /* Does Nothing for the moment.
-     * Will reallocate files and dirs for this thread */
+    LogDebug(COMPONENT_MFSL, "Asynchronous operations pool created.");
+
+
+    /* Does Nothing for the moment. */
     P(pcontext->lock);
-    status = MFSL_RefreshContext(pcontext, pfsal_context);
+    fsal_status = MFSL_RefreshContext(pcontext, pfsal_context);
     V(pcontext->lock);
 
-    if(FSAL_IS_ERROR(status))
-        MFSL_return(status.major, 0);
+    if(FSAL_IS_ERROR(fsal_status))
+        MFSL_return(fsal_status.major, 0);
 
-	MFSL_return(ERR_FSAL_NO_ERROR, 0);
+    MFSL_return(ERR_FSAL_NO_ERROR, 0);
 } /* MFSL_GetContext */
 
 /**
@@ -157,7 +213,7 @@ fsal_status_t MFSL_RefreshContext(mfsl_context_t    * pcontext,
 
     LogDebug(COMPONENT_MFSL, "Refreshing context %p.", pcontext);
 
-	MFSL_return(ERR_FSAL_NO_ERROR, 0);
+    MFSL_return(ERR_FSAL_NO_ERROR, 0);
 } /* MFSL_RefreshContext */
 
 #endif                          /* ! _USE_SWIG */

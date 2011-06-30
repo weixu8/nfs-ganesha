@@ -43,6 +43,7 @@
 #include "common_utils.h"
 
 
+extern mfsl_parameter_t * mfsl_param;      /* MFSL parameters, from mfsl_async_init.c */
 #ifndef _USE_SWIG
 /**
  *
@@ -104,10 +105,17 @@ fsal_status_t MFSL_SetDefault_parameter(mfsl_parameter_t * out_parameter /* IN/O
 
     out_parameter->ADT_sleep_time = 60000;
 
+    out_parameter->nb_pre_create_dirs  = 10;
+    out_parameter->nb_pre_create_files = 10;
+    strncpy(out_parameter->pre_create_obj_dir, "/tmp", MAXPATHLEN);
+
     out_parameter->lru_param.nb_entry_prealloc  = 100;
     out_parameter->lru_param.nb_call_gc_invalid = 30;
     out_parameter->lru_param.clean_entry        = mfsl_async_clean_pending_op;
     out_parameter->lru_param.entry_to_str       = mfsl_async_print_pending_op;
+
+    out_parameter->AFT_low_watermark    = 3;
+    out_parameter->AFT_nb_fill_critical = 5;
 
     MFSL_return(ERR_FSAL_NO_ERROR, 0);
 } /* MFSL_SetDefault_parameter */
@@ -212,6 +220,21 @@ fsal_status_t MFSL_load_parameter_from_conf(config_file_t      in_config,       
         {
             /* Asynchronous Dispatcher thread sleep time in microseconds */
             p_out_parameter->ADT_sleep_time = atoi(key_value);
+        }
+        else if(!strcasecmp(key_name, "PreCreatedObject_Directory"))
+        {
+            /* Directory on the FSAL where precreated objects will be stored */
+            strncpy(p_out_parameter->pre_create_obj_dir, key_value, MAXPATHLEN);
+        }
+        else if(!strcasecmp(key_name, "Nb_PreCreated_Directories"))
+        {
+            /* Number of precreated directories we'll store */
+            p_out_parameter->nb_pre_create_dirs = atoi(key_value);
+        }
+        else if(!strcasecmp(key_name, "Nb_PreCreated_Files"))
+        {
+            /* Number of precreated files we'll store */
+            p_out_parameter->nb_pre_create_files = atoi(key_value);
         }
         else if(!strcasecmp(key_name, "LRU_Prealloc_PoolSize"))
         {
