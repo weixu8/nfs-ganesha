@@ -230,6 +230,24 @@ typedef struct mfsl_async_op_setattrs_res__
     fsal_attrib_list_t object_attributes;
 } mfsl_async_op_setattrs_res_t;
 
+/* mkdir */
+typedef struct mfsl_async_op_mkdir_args__
+{
+    fsal_handle_t      old_parentdir_handle;
+    fsal_name_t        old_dirname;
+    fsal_handle_t      new_parentdir_handle;
+    fsal_name_t        new_dirname;
+    fsal_handle_t      new_dir_handle;
+    fsal_op_context_t  context;
+} mfsl_async_op_mkdir_args_t;
+
+typedef struct mfsl_async_op_mkdir_res__
+{
+    fsal_handle_t      new_dir_handle;
+    fsal_attrib_list_t new_dir_attributes;
+    fsal_attrib_list_t new_parentdir_attributes;
+} mfsl_async_op_mkdir_res_t;
+
 /* general */
 typedef union mfsl_async_op_args__
 {
@@ -237,6 +255,7 @@ typedef union mfsl_async_op_args__
     mfsl_async_op_link_args_t   link;
     mfsl_async_op_rename_args_t rename;
     mfsl_async_op_setattrs_args_t setattrs;
+    mfsl_async_op_mkdir_args_t mkdir;
 } mfsl_async_op_args_t;
 
 typedef union mfsl_async_op_res__
@@ -245,6 +264,7 @@ typedef union mfsl_async_op_res__
     mfsl_async_op_link_res_t   link;
     mfsl_async_op_rename_res_t rename;
     mfsl_async_op_setattrs_res_t setattrs;
+    mfsl_async_op_mkdir_res_t mkdir;
 } mfsl_async_op_res_t;
 
 typedef enum mfsl_async_op_type__
@@ -253,8 +273,8 @@ typedef enum mfsl_async_op_type__
     MFSL_ASYNC_OP_LINK     = 1,
     MFSL_ASYNC_OP_RENAME   = 2,
     MFSL_ASYNC_OP_SETATTRS = 3,
-    MFSL_ASYNC_OP_CREATE   = 4,
-    MFSL_ASYNC_OP_MKDIR    = 5,
+    MFSL_ASYNC_OP_MKDIR    = 4,
+    MFSL_ASYNC_OP_CREATE   = 5,
     MFSL_ASYNC_OP_REMOVE   = 6,
     MFSL_ASYNC_OP_TRUNCATE = 7,
     MFSL_ASYNC_OP_SYMLINK  = 8
@@ -266,8 +286,8 @@ static const char *mfsl_async_op_name[] =
     "MFSL_ASYNC_OP_LINK",
     "MFSL_ASYNC_OP_RENAME",
     "MFSL_ASYNC_OP_SETATTRS",
-    "MFSL_ASYNC_OP_CREATE",
     "MFSL_ASYNC_OP_MKDIR",
+    "MFSL_ASYNC_OP_CREATE",
     "MFSL_ASYNC_OP_REMOVE",
     "MFSL_ASYNC_OP_TRUNCATE",
     "MFSL_ASYNC_OP_SYMLINK"
