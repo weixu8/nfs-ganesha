@@ -1,34 +1,46 @@
-
-EXTRA_DIST = kernel/2.6.18/handle_ioctl.c				\
-	kernel/2.6.18/open_by_handle.c kernel/2.6.18/Makefile		\
-	kernel/2.6.32/handle_ioctl.c kernel/2.6.32/open_by_handle.c	\
-	kernel/2.6.32/Makefile kernel/tests/Makefile			\
-	kernel/tests/append_handle_prg.c				\
-	kernel/tests/create_handle_from_fd_prg.c			\
-	kernel/tests/create_handle_prg.c				\
-	kernel/tests/hardlink_handle_prg.c				\
-	kernel/tests/read_handle_prg.c					\
-	kernel/tests/readlink_handle_prg.c				\
-	kernel/tests/stat_handle_prg.c					\
-	kernel/tests/truncate_handle_prg.c kernel/README		\
-	kernel/Makefile kernel/include/handle.h
-
 AM_CFLAGS                     = $(FSAL_CFLAGS) $(SEC_CFLAGS)
 
-noinst_LTLIBRARIES          = libfsalvfs.la
+if BUILD_SHARED_FSAL
 
-libfsalvfs_la_SOURCES = fsal_access.c fsal_compat.c fsal_context.c	\
-	fsal_dirs.c fsal_fsinfo.c fsal_lock.c fsal_rcp.c		\
-	fsal_truncate.c fsal_attrs.c fsal_errors.c fsal_init.c		\
-	fsal_lookup.c fsal_convert.c fsal_rename.c fsal_symlinks.c	\
-	fsal_unlink.c fsal_create.c fsal_fileop.c fsal_internal.c	\
-	fsal_objectres.c fsal_stats.c fsal_tools.c fsal_create.c	\
-	fsal_fileop.c fsal_internal.c fsal_objectres.c fsal_stats.c	\
-	fsal_tools.c fsal_quota.c fsal_xattrs.c                	        \
-	fsal_convert.h fsal_internal.h fsal_xattrs.c			\
-	../../include/fsal.h ../../include/fsal_types.h			\
-	../../include/err_fsal.h					\
-	../../include/FSAL/FSAL_VFS/fsal_types.h
+lib_LTLIBRARIES = libfsalvfs.la
+libfsalvfs_la_LDFLAGS = -version-number @LIBVERSION@
+libfsalvfs_la_LIBADD = ../../SemN/libSemN.la 
+
+else
+noinst_LTLIBRARIES          = libfsalvfs.la
+endif
+
+libfsalvfs_la_SOURCES = fsal_access.c    \
+                        fsal_compat.c    \
+                        fsal_context.c	 \
+	                fsal_dirs.c      \
+                        fsal_fsinfo.c    \
+                        fsal_lock.c      \
+                        fsal_rcp.c	 \
+	                fsal_truncate.c  \
+                        fsal_attrs.c     \
+                        fsal_errors.c    \
+                        fsal_init.c	 \
+	                fsal_lookup.c    \
+                        fsal_convert.c   \
+                        fsal_rename.c    \
+                        fsal_symlinks.c	 \
+	                fsal_unlink.c    \
+                        fsal_create.c    \
+                        fsal_fileop.c    \
+                        fsal_internal.c	 \
+                        fsal_stats.c     \
+                        fsal_objectres.c \
+	                fsal_tools.c     \
+                        fsal_quota.c     \
+	                fsal_convert.h   \
+                        fsal_internal.h  \
+                        fsal_xattrs.c    \
+	                ../../include/fsal.h                     \
+                        ../../include/fsal_types.h	         \
+	                ../../include/err_fsal.h	         \
+	                ../../include/FSAL/FSAL_VFS/fsal_types.h \
+	                ../../include/FSAL/FSAL_VFS/fsal_handle_syscalls.h
 
 
 new: clean all
