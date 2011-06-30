@@ -424,7 +424,7 @@ fsal_status_t MFSL_async_filler_dispatch_objects()
                 
                 V(filler_data[i].precreated_object_pool.mutex_dirs_lru);
 
-                LogDebug(COMPONENT_MFSL, "%s dispatched to filler #%d.", object_entry->filename.name, i);
+                LogDebug(COMPONENT_MFSL, "dir %s dispatched to filler #%d.", object_entry->filename.name, i);
             }/* for */
 
         } /* while */
@@ -502,7 +502,7 @@ fsal_status_t MFSL_async_filler_dispatch_objects()
                 
                 V(filler_data[i].precreated_object_pool.mutex_files_lru);
 
-                LogDebug(COMPONENT_MFSL, "%s dispatched to filler #%d.", object_entry->filename.name, i);
+                LogDebug(COMPONENT_MFSL, "file %s dispatched to filler #%d.", object_entry->filename.name, i);
             } /* for */
 
         } /* while */
@@ -792,7 +792,7 @@ int MFSL_async_filler_fill_files(unsigned int index, int number, mfsl_precreated
         }
 
         remaining_todo -= 1;
-        LogDebug(COMPONENT_MFSL, "%d directories to create.", remaining_todo);
+        LogDebug(COMPONENT_MFSL, "%d files to create.", remaining_todo);
     } /* while */
 
 
@@ -869,6 +869,7 @@ fsal_status_t MFSL_async_get_precreated_object(unsigned int filler_index, fsal_n
     switch(type)
     {
         case FSAL_TYPE_FILE:
+            LogDebug(COMPONENT_MFSL, "Getting a precreated file.");
             /* Get first available entry */
             P(filler_data[filler_index].precreated_object_pool.mutex_files_lru);
             for(current_lru_entry=filler_data[filler_index].precreated_object_pool.files_lru->LRU;
@@ -919,8 +920,12 @@ fsal_status_t MFSL_async_get_precreated_object(unsigned int filler_index, fsal_n
             break;
 
         case FSAL_TYPE_DIR:
+            LogDebug(COMPONENT_MFSL, "Getting a precreated directory.");
             /* Get first available entry */
             P(filler_data[filler_index].precreated_object_pool.mutex_dirs_lru);
+            LogDebug(COMPONENT_MFSL, "%d precreated directories remaining.",
+                     (filler_data[filler_index].precreated_object_pool.dirs_lru->nb_entry
+                      - filler_data[filler_index].precreated_object_pool.dirs_lru->nb_invalid));
             for(current_lru_entry=filler_data[filler_index].precreated_object_pool.dirs_lru->LRU;
                     (current_lru_entry->valid_state != LRU_ENTRY_VALID) && (current_lru_entry != NULL);
                     current_lru_entry=current_lru_entry->next);
@@ -956,6 +961,7 @@ fsal_status_t MFSL_async_get_precreated_object(unsigned int filler_index, fsal_n
                             - filler_data[filler_index].precreated_object_pool.dirs_lru->nb_invalid)
                         < mfsl_param->AFT_low_watermark)
                 {
+                    LogDebug(COMPONENT_MFSL, "Filler %d, low matermark reached. Waking up filler.", filler_index);
                     /* Wake filler up */
                     P(filler_data[filler_index].mutex_watermark_condvar);
                     if((rc = pthread_cond_signal(&filler_data[filler_index].watermark_condvar)) != 0)
@@ -1128,6 +1134,8 @@ void * mfsl_async_filler_thread(void * arg)
         P(my_filler_data->precreated_object_pool.mutex_dirs_lru);
         remaining_dirs  = (my_filler_data->precreated_object_pool.dirs_lru->nb_entry  - my_filler_data->precreated_object_pool.dirs_lru->nb_invalid);
         V(my_filler_data->precreated_object_pool.mutex_dirs_lru);
+
+        LogDebug(COMPONENT_MFSL, "Remaining files: %d. Remaining directories: %d.", remaining_files, remaining_dirs);
 
         /* Wait for a signal from MFSL_get_precreated_object */
         P(my_filler_data->mutex_watermark_condvar);
