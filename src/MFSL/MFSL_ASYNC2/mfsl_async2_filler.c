@@ -524,7 +524,7 @@ fsal_status_t MFSL_async_filler_dispatch_objects()
  *
  * \return 0 if ok, another value instead
  */
-int MFSL_async_filler_fill_directories(unsigned int index, unsigned int number, mfsl_precreated_object_t ** object)
+int MFSL_async_filler_fill_directories(unsigned int index, unsigned int number, mfsl_precreated_object_t ** pp_object)
 {
     fsal_status_t              fsal_status;
     struct timeval             current_time;
@@ -543,7 +543,7 @@ int MFSL_async_filler_fill_directories(unsigned int index, unsigned int number, 
 
     /* Do we add to LRU or do we give objects directly to caller?
      ************************************************************/
-    if(!object)
+    if(!pp_object)
     {
         /* Take the ressource */
         P(filler_data[index].precreated_object_pool.mutex_dirs_lru);
@@ -622,7 +622,7 @@ int MFSL_async_filler_fill_directories(unsigned int index, unsigned int number, 
                  mfsl_param->pre_create_obj_dir,
                  index, filename_str);
 
-        if(!object)
+        if(pp_object == NULL)
         {
             /* LRU */
             lru_object_entry = LRU_new_entry(filler_data[index].precreated_object_pool.dirs_lru, &lru_status);
@@ -640,7 +640,7 @@ int MFSL_async_filler_fill_directories(unsigned int index, unsigned int number, 
         else
         {
             /* Give them to caller */
-            object[i] = object_entry;
+            pp_object[i] = object_entry;
             i++;
         }
 
@@ -651,7 +651,7 @@ int MFSL_async_filler_fill_directories(unsigned int index, unsigned int number, 
 
     /* Don't forget to free mutex
      ****************************/
-    if(!object)
+    if(pp_object == NULL)
     {
         V(filler_data[index].precreated_object_pool.mutex_dirs_lru);        
     }
@@ -881,6 +881,7 @@ fsal_status_t MFSL_async_get_precreated_object(unsigned int filler_index, fsal_n
                 LogWarn(COMPONENT_MFSL, "We ran out of precreated files. Creating one on the fly.");
                 if(MFSL_async_filler_fill_files(filler_index, 1, object) != 0)
                 {
+                    V(filler_data[filler_index].precreated_object_pool.mutex_files_lru);
                     LogCrit(COMPONENT_MFSL, "Impossible to fill files.");
                     MFSL_return(ERR_FSAL_NOENT, 0);
                 }
@@ -905,7 +906,7 @@ fsal_status_t MFSL_async_get_precreated_object(unsigned int filler_index, fsal_n
                             - filler_data[filler_index].precreated_object_pool.files_lru->nb_invalid)
                         < mfsl_param->AFT_low_watermark)
                 {
-                    /* Wake filler up */
+                    /* Wake up filler */
                     P(filler_data[filler_index].mutex_watermark_condvar);
                     if((rc = pthread_cond_signal(&filler_data[filler_index].watermark_condvar)) != 0)
                     {
@@ -930,6 +931,7 @@ fsal_status_t MFSL_async_get_precreated_object(unsigned int filler_index, fsal_n
                 LogWarn(COMPONENT_MFSL, "We ran out of precreated directories. Creating one on the fly.");
                 if(MFSL_async_filler_fill_directories(filler_index, 1, object) != 0)
                 {
+                    V(filler_data[filler_index].precreated_object_pool.mutex_dirs_lru);
                     LogCrit(COMPONENT_MFSL, "Impossible to fill directories.");
                     MFSL_return(ERR_FSAL_NOENT, 0);
                 }
