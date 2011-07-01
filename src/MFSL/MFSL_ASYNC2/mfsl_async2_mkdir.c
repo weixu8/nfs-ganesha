@@ -245,6 +245,7 @@ fsal_status_t MFSL_mkdir(mfsl_object_t      * parent_directory_handle, /* IN */
      ******************************/
     *object_attributes = p_async_op_desc->op_guessed.mkdir.new_dir_attributes;
     *parent_attributes = p_async_op_desc->op_guessed.mkdir.new_parentdir_attributes;
+    object_handle->handle = p_async_op_desc->op_guessed.mkdir.new_dir_handle;
 
     MFSL_return(ERR_FSAL_NO_ERROR, 0);
 } /* MFSL_mkdir */
