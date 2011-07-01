@@ -93,22 +93,6 @@ fsal_status_t MFSL_access(mfsl_object_t * object_handle,        /* IN */
   return FSAL_access(&object_handle->handle, p_context, access_type, object_attributes);
 }                               /* MFSL_access */
 
-fsal_status_t MFSL_create(mfsl_object_t * parent_directory_handle,      /* IN */
-                          fsal_name_t * p_filename,     /* IN */
-                          fsal_op_context_t * p_context,        /* IN */
-                          mfsl_context_t * p_mfsl_context,      /* IN */
-                          fsal_accessmode_t accessmode, /* IN */
-                          mfsl_object_t * object_handle,        /* OUT */
-                          fsal_attrib_list_t * object_attributes,       /* [ IN/OUT ] */
-                          fsal_attrib_list_t * parent_attributes,        /* [ IN/OUT ] */
-			  void * pextra
-    )
-{
-  return FSAL_create(&parent_directory_handle->handle,
-                     p_filename,
-                     p_context, accessmode, &object_handle->handle, object_attributes);
-}                               /* MFSL_create */
-
 fsal_status_t MFSL_truncate(mfsl_object_t * filehandle, /* IN */
                             fsal_op_context_t * p_context,      /* IN */
                             mfsl_context_t * p_mfsl_context,    /* IN */
