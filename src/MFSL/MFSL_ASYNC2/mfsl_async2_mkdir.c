@@ -239,7 +239,10 @@ fsal_status_t MFSL_mkdir(mfsl_object_t      * parent_directory_handle, /* IN */
     fsal_status = MFSL_async_post(p_async_op_desc);
 
     if(FSAL_IS_ERROR(fsal_status))
+    {
+        LogCrit(COMPONENT_MFSL, "Impossible to post the operation.");
         return fsal_status;
+    }
 
     /* Return attributes and status
      ******************************/
