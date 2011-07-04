@@ -252,12 +252,14 @@ cache_content_status_t cache_content_read_conf_gc_policy(config_file_t in_config
   /* Get the config BLOCK */
   if((block = config_FindItemByName(in_config, CONF_LABEL_CACHE_CONTENT_GCPOL)) == NULL)
     {
-      /* fprintf(stderr, "Cannot read item \"%s\" from configuration file\n", CONF_LABEL_CACHE_CONTENT_GCPOL ) ; */
+      /* fprintf(/stderr, "Cannot read item \"%s\" from configuration file\n", CONF_LABEL_CACHE_CONTENT_GCPOL ) ; */
+      LogCrit(COMPONENT_CACHE_INODE, "Cannot read item \"%s\" from configuration file", CONF_LABEL_CACHE_CONTENT_GCPOL );
       return CACHE_CONTENT_NOT_FOUND;
     }
   else if(config_ItemType(block) != CONFIG_ITEM_BLOCK)
     {
       /* Expected to be a block */
+      LogCrit(COMPONENT_CACHE_INODE, "Bad Item type");
       return CACHE_CONTENT_INVALID_ARGUMENT;
     }
 
@@ -272,8 +274,7 @@ cache_content_status_t cache_content_read_conf_gc_policy(config_file_t in_config
       /* Get key's name */
       if((err = config_GetKeyValue(item, &key_name, &key_value)) != 0)
         {
-          fprintf(stderr,
-                  "Error reading key[%d] from section \"%s\" of configuration file.\n",
+          LogCrit(COMPONENT_CACHE_INODE, "Error reading key[%d] from section \"%s\" of configuration file.",
                   var_index, CONF_LABEL_CACHE_CONTENT_GCPOL);
           return CACHE_CONTENT_INVALID_ARGUMENT;
         }
@@ -304,8 +305,7 @@ cache_content_status_t cache_content_read_conf_gc_policy(config_file_t in_config
         }
       else
         {
-          fprintf(stderr,
-                  "Unknown or unsettable key: %s (item %s)\n",
+          LogCrit(COMPONENT_CACHE_INODE, "Unknown or unsettable key: %s (item %s)",
                   key_name, CONF_LABEL_CACHE_CONTENT_GCPOL);
           return CACHE_CONTENT_INVALID_ARGUMENT;
         }
