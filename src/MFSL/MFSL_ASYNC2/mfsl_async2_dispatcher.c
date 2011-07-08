@@ -168,7 +168,7 @@ void * mfsl_async_dispatcher_thread(void * arg)
     while(!end_of_mfsl)
     {
         /* Sleep some time */
-        usleep(mfsl_param->ADT_sleep_time);
+        sleep(mfsl_param->ADT_sleep_time);
 
         /* Get current time */
         if(gettimeofday(&current_time, NULL) != 0)
