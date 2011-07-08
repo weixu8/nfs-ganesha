@@ -110,7 +110,7 @@ fsal_status_t MFSL_link(mfsl_object_t      * target_handle,  /* IN */
 
 	/* Sanity checks 
      ***************/
-	if(!p_context || !p_attr_destdir || !pextra)
+	if(!p_context || !p_attr_obj || !pextra)
 		MFSL_return(ERR_FSAL_FAULT, 0);
 
 	/* pextra contains destination and source directory attributes */
