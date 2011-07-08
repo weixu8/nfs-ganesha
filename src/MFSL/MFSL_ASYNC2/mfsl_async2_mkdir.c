@@ -24,7 +24,7 @@
  */
 
 /**
- * \file    mfsl_async2_mkdir.c
+ * \file    mfsl_async_mkdir.c
  * \author  $Author: delahoussaye $
  * \date    $Date: 2011/06/28 11:50:00 $
  * \version $Revision: 1.0 $

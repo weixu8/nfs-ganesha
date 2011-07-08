@@ -27,8 +27,8 @@
  * \file    mfsl_types.h
  */
 
-#ifndef _MFSL_ASYNC2_TYPES_H
-#define _MFSL_ASYNC2_TYPES_H
+#ifndef _MFSL_ASYNC_TYPES_H
+#define _MFSL_ASYNC_TYPES_H
 
 #ifndef TRUE
 #define TRUE 1
@@ -50,7 +50,7 @@
  * labels in the config file
  */
 
-#define CONF_LABEL_MFSL_ASYNC2          "MFSL_ASYNC"
+#define CONF_LABEL_MFSL_ASYNC          "MFSL_ASYNC"
 
 /* other includes */
 #include <sys/types.h>
@@ -339,4 +339,4 @@ fsal_status_t MFSL_async_get_precreated_object(unsigned int filler_index,       
                                                fsal_nodetype_t type,                /* IN */
                                                mfsl_precreated_object_t ** object); /* IN/OUT */
 
-#endif                          /* _MFSL_ASYNC2_TYPES_H */
+#endif                          /* _MFSL_ASYNC_TYPES_H */

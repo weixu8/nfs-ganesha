@@ -24,7 +24,7 @@
  */
 
 /**
- * \file    mfsl_async2_rename.c
+ * \file    mfsl_async_rename.c
  * \author  $Author: leibovic $
  * \date    $Date: 2011/05/20 14:08:00 $
  * \version $Revision: 1.0 $

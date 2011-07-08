@@ -24,7 +24,7 @@
  */
 
 /**
- * \file    mfsl_async2_unlink.c
+ * \file    mfsl_async_unlink.c
  * \author  $Author: leibovic $
  * \date    $Date: 2011/05/13 14:30:00 $
  * \version $Revision: 1.0 $

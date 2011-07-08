@@ -261,7 +261,7 @@ cache_inode_status_t cache_inode_remove_sw(cache_entry_t * pentry,             /
   cache_inode_status_t status;
   cache_content_status_t cache_content_status;
   int to_remove_numlinks = 0;
-#ifdef _USE_MFSL_ASYNC2
+#ifdef _USE_MFSL_ASYNC
   fsal_attrib_list_t object_attr;
 #endif
 
@@ -385,7 +385,7 @@ cache_inode_status_t cache_inode_remove_sw(cache_entry_t * pentry,             /
       after_attr.asked_attributes = pclient->attrmask;
 #ifdef _USE_MFSL
       cache_inode_get_attributes(pentry, &after_attr);
-#if defined(_USE_MFSL_ASYNC2)
+#if defined(_USE_MFSL_ASYNC)
       cache_inode_get_attributes(to_remove_entry, &object_attr);
       fsal_status = MFSL_unlink(&pentry->mobject,
                                 pnode_name,
@@ -412,7 +412,7 @@ cache_inode_status_t cache_inode_remove_sw(cache_entry_t * pentry,             /
 				  &to_remove_entry->mobject,
 				  pcontext, &pclient->mfsl_context, &after_attr,
 				  NULL);
-#endif /* _USE_MFSL_ASYNC2 */
+#endif /* _USE_MFSL_ASYNC */
 #else /* _USE_MFSL */
       fsal_status = FSAL_unlink(&fsal_handle_parent, pnode_name, pcontext, &after_attr);
 #endif /* _USE_MFSL */

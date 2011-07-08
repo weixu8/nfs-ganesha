@@ -24,7 +24,7 @@
  */
 
 /**
- * \file    mfsl_async2_synclet.c
+ * \file    mfsl_async_synclet.c
  * \author  $Author: leibovic $
  * \date    $Date: 2011/05/10 10:24:00 $
  * \version $Revision: 1.0 $

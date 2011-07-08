@@ -24,7 +24,7 @@
  */
 
 /**
- * \file    mfsl_async2_setattrs.c
+ * \file    mfsl_async_setattrs.c
  * \author  $Author: leibovic $
  * \date    $Date: 2011/05/20 16:08:00 $
  * \version $Revision: 1.0 $

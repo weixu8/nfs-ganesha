@@ -24,7 +24,7 @@
  */
 
 /**
- * \file    mfsl_async2_read_conf.c
+ * \file    mfsl_async_read_conf.c
  * \author  $Author: leibovic $
  * \date    $Date: 2011/05/9 15:57:01 $
  * \version $Revision: 1.0 $
@@ -159,10 +159,10 @@ fsal_status_t MFSL_load_parameter_from_conf(config_file_t      in_config,       
         MFSL_return(ERR_FSAL_FAULT, 0);
 
     /* Get configuration Block */
-    if((block = config_FindItemByName(in_config, CONF_LABEL_MFSL_ASYNC2)) == NULL)
+    if((block = config_FindItemByName(in_config, CONF_LABEL_MFSL_ASYNC)) == NULL)
     {
         LogMajor(COMPONENT_MFSL, "/!\\ Cannot read item \"%s\" from configuration file\n",
-                CONF_LABEL_MFSL_ASYNC2);
+                CONF_LABEL_MFSL_ASYNC);
 
         MFSL_return(ERR_FSAL_NOENT, 0);
     }
@@ -180,7 +180,7 @@ fsal_status_t MFSL_load_parameter_from_conf(config_file_t      in_config,       
         if(err > 0)
         {
             LogCrit(COMPONENT_MFSL, "Error reading key[%d] from section \"%s\" of configuration file.",
-                    var_cur, CONF_LABEL_MFSL_ASYNC2);
+                    var_cur, CONF_LABEL_MFSL_ASYNC);
             MFSL_return(ERR_FSAL_SERVERFAULT, err);
         }
 
@@ -266,7 +266,7 @@ fsal_status_t MFSL_load_parameter_from_conf(config_file_t      in_config,       
             /* Unknown key */
             LogMajor(COMPONENT_MFSL,
                     "Unknown or unsettable key %s from section \"%s\" of configuration file.",
-                    key_name, CONF_LABEL_MFSL_ASYNC2);
+                    key_name, CONF_LABEL_MFSL_ASYNC);
 
             MFSL_return(ERR_FSAL_INVAL, 0);
         }

@@ -142,7 +142,7 @@ cache_inode_status_t cache_inode_rename(cache_entry_t * pentry_dirsrc,
   fsal_attrib_list_t attrlookup;
   fsal_attrib_list_t *pattrsrc;
   fsal_attrib_list_t *pattrdest;
-#ifdef _USE_MFSL_ASYNC2
+#ifdef _USE_MFSL_ASYNC
   fsal_attrib_list_t attr_old_obj; /* we will copy the object attributes and use it in MFSL_rename */
 #endif
   fsal_handle_t *phandle_dirsrc;
@@ -223,7 +223,7 @@ cache_inode_status_t cache_inode_rename(cache_entry_t * pentry_dirsrc,
 
       return *pstatus;
     }
-#ifdef _USE_MFSL_ASYNC2
+#ifdef _USE_MFSL_ASYNC
   else
   {
           /* source object does exist, we copy its attributes for later */
@@ -430,20 +430,20 @@ cache_inode_status_t cache_inode_rename(cache_entry_t * pentry_dirsrc,
    * the cache would be inconsistent !
    */
 #ifdef _USE_MFSL
-#ifdef _USE_MFSL_ASYNC2
+#ifdef _USE_MFSL_ASYNC
   fsal_status = MFSL_rename(&pentry_dirsrc->mobject,
                             poldname,
                             &pentry_dirdest->mobject,
                             pnewname,
                             pcontext, &pclient->mfsl_context, pattrsrc, pattrdest,
 			    &attr_old_obj);
-#else /* _USE_MFSL_ASYNC2 */
+#else /* _USE_MFSL_ASYNC */
   fsal_status = MFSL_rename(&pentry_dirsrc->mobject,
                             poldname,
                             &pentry_dirdest->mobject,
                             pnewname,
                             pcontext, &pclient->mfsl_context, pattrsrc, pattrdest, NULL);
-#endif /* _USE_MFSL_ASYNC2 */
+#endif /* _USE_MFSL_ASYNC */
 #else /* _USE_MFSL */
   fsal_status = FSAL_rename(phandle_dirsrc,
                             poldname,

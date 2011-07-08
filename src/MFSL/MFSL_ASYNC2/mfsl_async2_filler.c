@@ -24,7 +24,7 @@
  */
 
 /**
- * \file    mfsl_async2_filler.c
+ * \file    mfsl_async_filler.c
  * \author  $Author: de la houssaye $
  * \date    $Date: 2011/06/21 10:00:00 $
  * \version $Revision: 1.0 $

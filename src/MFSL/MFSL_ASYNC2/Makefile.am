@@ -1,22 +1,22 @@
 AM_CFLAGS                     = $(FSAL_CFLAGS) $(SEC_CFLAGS)
 
 
-noinst_LTLIBRARIES          = libmfslasync2.la
+noinst_LTLIBRARIES          = libmfslasync.la
 
-libmfslasync2_la_SOURCES = mfsl_async2.c            \
-                           mfsl_async2_init.c       \
-                           mfsl_async2_read_conf.c  \
-                           mfsl_async2_dispatcher.c \
-                           mfsl_async2_filler.c     \
-                           mfsl_async2_synclet.c    \
-                           mfsl_async2_unlink.c     \
-                           mfsl_async2_link.c       \
-                           mfsl_async2_rename.c     \
-                           mfsl_async2_setattrs.c   \
-                           mfsl_async2_mkdir.c		\
-                           mfsl_async2_create.c
+libmfslasync_la_SOURCES = mfsl_async.c            \
+                          mfsl_async_init.c       \
+                          mfsl_async_read_conf.c  \
+                          mfsl_async_dispatcher.c \
+                          mfsl_async_filler.c     \
+                          mfsl_async_synclet.c    \
+                          mfsl_async_unlink.c     \
+                          mfsl_async_link.c       \
+                          mfsl_async_rename.c     \
+                          mfsl_async_setattrs.c   \
+                          mfsl_async_mkdir.c	   \
+                          mfsl_async_create.c
 
-libmfslasync2_la_LIBADD = $(FSAL_LIB)
+libmfslasync_la_LIBADD = $(FSAL_LIB)
 
 #check_PROGRAMS              = test_mfsl_template
 #test_mfsl_template_SOURCES  = test_fsal.c 

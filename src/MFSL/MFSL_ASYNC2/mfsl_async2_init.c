@@ -24,11 +24,11 @@
  */
 
 /**
- * \file    mfsl_async2_init.c
+ * \file    mfsl_async_init.c
  * \author  $Author: leibovic $
  * \date    $Date: 2011/05/9 15:57:01 $
  * \version $Revision: 1.0 $
- * \brief   Initialisation and termination of MFSL_ASYNC2.
+ * \brief   Initialisation and termination of MFSL_ASYNC.
  */
 
 #include "config.h"

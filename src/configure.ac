@@ -379,14 +379,14 @@ AM_CONDITIONAL(USE_MFSL_PNFS_FILE, test "$PNFS" = "SPNFS_LIKE")
 AM_CONDITIONAL(USE_MFSL,           test "$PNFS" = "SPNFS_LIKE")
 
 # MFSL switch argument (default is NULL )
-AC_ARG_WITH( [mfsl], AS_HELP_STRING([--with-mfsl=NONE|NULL|ASYNC_OLD|ASYNC2|AIO|MIRROR|PROXY_RPCSECGSS (default=NULL)],[specify the type of intermediate FSAL module to be used] ),
+AC_ARG_WITH( [mfsl], AS_HELP_STRING([--with-mfsl=NONE|NULL|ASYNC_OLD|ASYNC|AIO|MIRROR|PROXY_RPCSECGSS (default=NULL)],[specify the type of intermediate FSAL module to be used] ),
 	     MFSL="$withval", MFSL="NONE" )
 
 AM_CONDITIONAL(USE_MFSL_NONE,            test "$MFSL" = "NONE")
 AM_CONDITIONAL(USE_MFSL_AIO,             test "$MFSL" = "AIO")
 AM_CONDITIONAL(USE_MFSL_NULL,            test "$MFSL" = "NULL")
 AM_CONDITIONAL(USE_MFSL_ASYNC_OLD        test "$MFSL" = "ASYNC_OLD")
-AM_CONDITIONAL(USE_MFSL_ASYNC2,           test "$MFSL" = "ASYNC2")
+AM_CONDITIONAL(USE_MFSL_ASYNC,           test "$MFSL" = "ASYNC")
 AM_CONDITIONAL(USE_MFSL_PROXY_RPCSECGSS, test "$MFSL" = "PROXY_RPCSECGSS")
 
 AM_CONDITIONAL(USE_MFSL,                 test "$MFSL" != "NONE" ) 
@@ -646,10 +646,10 @@ case $MFSL in
 		AC_DEFINE([_USE_MFSL_ASYNC_OLD], 1, [Use MFSL_ASYNC_OLD module which calls the FSAL functions asynchronously])
 		MFSL_LIB="\$(top_builddir)/MFSL/MFSL_ASYNC_OLD/libmfslasync.la"
 		;;
-	ASYNC2)
+	ASYNC)
 		AC_DEFINE([_USE_MFSL], 1, [Use MFSL module])
-		AC_DEFINE([_USE_MFSL_ASYNC2], 1, [Use MFSL_ASYNC2 module which calls the FSAL functions asynchronously])
-		MFSL_LIB="\$(top_builddir)/MFSL/MFSL_ASYNC2/libmfslasync2.la"
+		AC_DEFINE([_USE_MFSL_ASYNC], 1, [Use MFSL_ASYNC module which calls the FSAL functions asynchronously])
+		MFSL_LIB="\$(top_builddir)/MFSL/MFSL_ASYNC/libmfslasync.la"
 		;;
 	AIO)
 		AC_DEFINE([_USE_MFSL], 1, [Use MFSL module])
@@ -753,8 +753,8 @@ fi
 
 # MFSL_ASYNC should not be used with HPSS
 if [[ $FSAL == "HPSS" ]] ; then
-  if [[ $MFSL == "ASYNC2" ]] ; then 
-		AC_MSG_ERROR([FSAL_HPSS and MFSL_ASYNC2 are incompatible])
+  if [[ $MFSL == "ASYNC" ]] ; then
+		AC_MSG_ERROR([FSAL_HPSS and MFSL_ASYNC are incompatible])
   fi
 fi
 
@@ -795,7 +795,7 @@ AC_CONFIG_FILES([include/Makefile
                  include/MFSL/MFSL_NULL/Makefile
                  include/MFSL/MFSL_AIO/Makefile
                  include/MFSL/MFSL_ASYNC_OLD/Makefile
-                 include/MFSL/MFSL_ASYNC2/Makefile
+                 include/MFSL/MFSL_ASYNC/Makefile
                  include/MFSL/MFSL_PNFS_FILE/Makefile
                  include/MFSL/MFSL_PROXY_RPCSECGSS/Makefile
                  include/PNFS/Makefile
@@ -848,7 +848,7 @@ AC_CONFIG_FILES([include/Makefile
 		 MFSL/Makefile
 		 MFSL/MFSL_NULL/Makefile                 
 		 MFSL/MFSL_ASYNC_OLD/Makefile
-		 MFSL/MFSL_ASYNC2/Makefile                 
+		 MFSL/MFSL_ASYNC/Makefile
 		 MFSL/MFSL_AIO/Makefile                 
 		 MFSL/MFSL_PNFS_FILE/Makefile                 
 		 MFSL/MFSL_PROXY_RPCSECGSS/Makefile                 

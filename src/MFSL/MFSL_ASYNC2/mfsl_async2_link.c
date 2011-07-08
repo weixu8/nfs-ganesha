@@ -24,7 +24,7 @@
  */
 
 /**
- * \file    mfsl_async2_link.c
+ * \file    mfsl_async_link.c
  * \author  $Author: leibovic $
  * \date    $Date: 2011/05/19 14:01:00 $
  * \version $Revision: 1.0 $

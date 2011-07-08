@@ -301,8 +301,8 @@ int mfsl_init(char *filename, int flag_v, FILE * output)
         {
 #if defined( _USE_MFSL_ASYNC_OLD )
           fprintf(output, "Missing MFSL_Async_old stanza in config file\n");
-#elif defined( _USE_MFSL_ASYNC2 )
-          fprintf(output, "Missing MFSL_Async2 stanza in config file\n");
+#elif defined( _USE_MFSL_ASYNC )
+          fprintf(output, "Missing MFSL_Async stanza in config file\n");
 #elif defined( _USE_MFSL_PROXY_RPCSECGSS )
           fprintf(output, "Missing MFSL_Proxy_RrpSeGss  stanza in config file\n");
 #else

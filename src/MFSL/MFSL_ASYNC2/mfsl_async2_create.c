@@ -24,7 +24,7 @@
  */
 
 /**
- * \file    mfsl_async2_create.c
+ * \file    mfsl_async_create.c
  * \author  $Author: delahoussaye $
  * \date    $Date: 2011/07/01 10:12:00 $
  * \version $Revision: 1.0 $

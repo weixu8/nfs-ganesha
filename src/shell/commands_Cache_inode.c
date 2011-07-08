@@ -231,7 +231,7 @@ static int InitThread(cmdCacheInode_thr_info_t * thr_info)
       return 1;
     }
 
-#ifdef _USE_MFSL_ASYNC2
+#ifdef _USE_MFSL_ASYNC
   /* We need to call MFSL_GetContext a second time because of the way Ganeshell works.
    * Normally, when Ganesha starts, the cache_inode call MFSL_GetContext and remembers
    * the adress of the context.
