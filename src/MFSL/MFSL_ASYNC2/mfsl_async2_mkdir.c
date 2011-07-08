@@ -126,19 +126,23 @@ fsal_status_t MFSL_mkdir(mfsl_object_t      * parent_directory_handle, /* IN */
     mfsl_precreated_object_t * precreated_object;      /* Precreated directory we get */
     int                        chosen_synclet;
 
-    SetNameFunction("MFSL_mkdir");
 
     /* Sanity checks
      ***************/
     if(!p_context || !parent_attributes || !object_attributes)
         MFSL_return(ERR_FSAL_FAULT, 0);
 
+
     /* Asynchronous check
      ********************/
     fsal_status = FSAL_create_access(p_context, parent_attributes);
 
     if(FSAL_IS_ERROR(fsal_status))
+    {
+        LogCrit(COMPONENT_MFSL, "Access is forbidden. Status: (%u.%u).", fsal_status.major, fsal_status.minor);
         MFSL_return(fsal_status.major, 0);
+    }
+
 
     /* Asynchronous operation description construction
      *************************************************/
@@ -166,6 +170,7 @@ fsal_status_t MFSL_mkdir(mfsl_object_t      * parent_directory_handle, /* IN */
 
     /* Keep in mind this index: it will be used by process_async_op and for scheduling */
     p_async_op_desc->related_synclet_index = chosen_synclet;
+
 
     /* Guess attributes
      ******************/
@@ -195,19 +200,22 @@ fsal_status_t MFSL_mkdir(mfsl_object_t      * parent_directory_handle, /* IN */
            (void *) &precreated_object->object_attributes,
            sizeof(fsal_attrib_list_t));
 
-    p_async_op_desc->op_guessed.mkdir.new_dir_attributes.ctime.seconds  = p_async_op_desc->op_time.tv_sec;
-    p_async_op_desc->op_guessed.mkdir.new_dir_attributes.ctime.nseconds = (p_async_op_desc->op_time.tv_usec * 1000);
+    p_async_op_desc->op_guessed.mkdir.new_dir_attributes.ctime.seconds  = time(NULL);
+    p_async_op_desc->op_guessed.mkdir.new_dir_attributes.ctime.nseconds = 0;
+
     p_async_op_desc->op_guessed.mkdir.new_dir_attributes.mtime.seconds  =
             p_async_op_desc->op_guessed.mkdir.new_dir_attributes.ctime.seconds;
     p_async_op_desc->op_guessed.mkdir.new_dir_attributes.mtime.nseconds =
             p_async_op_desc->op_guessed.mkdir.new_dir_attributes.ctime.nseconds;
 
-    p_async_op_desc->op_guessed.mkdir.new_dir_attributes.mode           = accessmode;
-    p_async_op_desc->op_guessed.mkdir.new_dir_attributes.owner          = FSAL_OP_CONTEXT_TO_UID(p_context);
-    p_async_op_desc->op_guessed.mkdir.new_dir_attributes.group          = FSAL_OP_CONTEXT_TO_GID(p_context);
+    p_async_op_desc->op_guessed.mkdir.new_dir_attributes.mode  = accessmode;
+    p_async_op_desc->op_guessed.mkdir.new_dir_attributes.owner = FSAL_OP_CONTEXT_TO_UID(p_context);
+    p_async_op_desc->op_guessed.mkdir.new_dir_attributes.group = FSAL_OP_CONTEXT_TO_GID(p_context);
 
+    p_async_op_desc->op_guessed.mkdir.new_dir_attributes.type  = FSAL_TYPE_DIR;
 
     p_async_op_desc->op_guessed.mkdir.new_parentdir_attributes.filesize += 1;
+    p_async_op_desc->op_guessed.mkdir.new_parentdir_attributes.numlinks += 1;
 
 
     /* Populate asynchronous operation description
@@ -221,7 +229,7 @@ fsal_status_t MFSL_mkdir(mfsl_object_t      * parent_directory_handle, /* IN */
     p_async_op_desc->op_args.mkdir.new_dirname           = *p_dirname;
     p_async_op_desc->op_args.mkdir.context               = *p_context;
 
-    /* \todo what is that?
+    /** \todo what is that?
      * p_async_op_desc->op_mobject                             = object_handle;
      ****/
     p_async_op_desc->fsal_op_context                     = *p_context;

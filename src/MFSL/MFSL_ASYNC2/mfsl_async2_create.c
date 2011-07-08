@@ -200,17 +200,19 @@ fsal_status_t MFSL_create(mfsl_object_t      * parent_directory_handle, /* IN */
            (void *) &precreated_object->object_attributes,
            sizeof(fsal_attrib_list_t));
 
-    p_async_op_desc->op_guessed.create.new_file_attributes.ctime.seconds  = p_async_op_desc->op_time.tv_sec;
-    p_async_op_desc->op_guessed.create.new_file_attributes.ctime.nseconds = (p_async_op_desc->op_time.tv_usec * 1000);
+    p_async_op_desc->op_guessed.create.new_file_attributes.ctime.seconds  = time(NULL);
+    p_async_op_desc->op_guessed.create.new_file_attributes.ctime.nseconds = 0;
+
     p_async_op_desc->op_guessed.create.new_file_attributes.mtime.seconds  =
             p_async_op_desc->op_guessed.create.new_file_attributes.ctime.seconds;
     p_async_op_desc->op_guessed.create.new_file_attributes.mtime.nseconds =
             p_async_op_desc->op_guessed.create.new_file_attributes.ctime.nseconds;
 
-    p_async_op_desc->op_guessed.create.new_file_attributes.mode           = accessmode;
-    p_async_op_desc->op_guessed.create.new_file_attributes.owner          = FSAL_OP_CONTEXT_TO_UID(p_context);
-    p_async_op_desc->op_guessed.create.new_file_attributes.group          = FSAL_OP_CONTEXT_TO_GID(p_context);
+    p_async_op_desc->op_guessed.create.new_file_attributes.mode  = accessmode;
+    p_async_op_desc->op_guessed.create.new_file_attributes.owner = FSAL_OP_CONTEXT_TO_UID(p_context);
+    p_async_op_desc->op_guessed.create.new_file_attributes.group = FSAL_OP_CONTEXT_TO_GID(p_context);
 
+    p_async_op_desc->op_guessed.create.new_file_attributes.type  = FSAL_TYPE_FILE;
 
     p_async_op_desc->op_guessed.create.new_parentdir_attributes.filesize += 1;
 
@@ -226,7 +228,7 @@ fsal_status_t MFSL_create(mfsl_object_t      * parent_directory_handle, /* IN */
     p_async_op_desc->op_args.create.new_filename         = *p_filename;
     p_async_op_desc->op_args.create.context              = *p_context;
 
-    /* \todo what is that?
+    /** \todo what is that?
      * p_async_op_desc->op_mobject                             = object_handle;
      ****/
     p_async_op_desc->fsal_op_context                     = *p_context;

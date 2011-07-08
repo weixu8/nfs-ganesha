@@ -366,9 +366,11 @@ fsal_status_t MFSL_async_filler_dispatch_objects()
             }
 
             FSAL_SET_COOKIE_BEGINNING(dir_fsal_cookie_beginning);
+            /** \todo ask for FSAL_ATTRS_MANDATORY?
+             **************************************/
             fsal_status = FSAL_readdir(&dir_dir_descriptor,
                                        dir_fsal_cookie_beginning,
-                                       FSAL_ATTRS_MANDATORY,
+                                       FSAL_ATTRS_POSIX,
                                        NB_DIRENT_CLEAN * sizeof(fsal_dirent_t),
                                        dir_dirent, &dir_end_cookie, &dir_nb_entries, &eod);
 
@@ -405,6 +407,10 @@ fsal_status_t MFSL_async_filler_dispatch_objects()
                 object_entry->mobject.handle    = dir_dirent[dir_nb_count].handle;
                 object_entry->filename          = dir_dirent[dir_nb_count].name;
                 object_entry->object_attributes = dir_dirent[dir_nb_count].attributes;
+
+                /* Correctly fill attributes */
+                object_entry->object_attributes.supported_attributes = FSAL_ATTRS_POSIX;
+                object_entry->object_attributes.asked_attributes     = FSAL_ATTRS_POSIX;
 
                 /* LRU */
                 P(filler_data[i].precreated_object_pool.mutex_dirs_lru);
@@ -444,9 +450,11 @@ fsal_status_t MFSL_async_filler_dispatch_objects()
             }
 
             FSAL_SET_COOKIE_BEGINNING(file_fsal_cookie_beginning);
+            /** \todo ask for FSAL_ATTRS_MANDATORY?
+             **************************************/
             fsal_status = FSAL_readdir(&file_dir_descriptor,
                                        file_fsal_cookie_beginning,
-                                       FSAL_ATTRS_MANDATORY,
+                                       FSAL_ATTRS_POSIX,
                                        NB_DIRENT_CLEAN * sizeof(fsal_dirent_t),
                                        file_dirent, &file_end_cookie, &file_nb_entries, &eod);
 
@@ -483,6 +491,10 @@ fsal_status_t MFSL_async_filler_dispatch_objects()
                 object_entry->mobject.handle    = file_dirent[file_nb_count].handle;
                 object_entry->filename          = file_dirent[file_nb_count].name;
                 object_entry->object_attributes = file_dirent[file_nb_count].attributes;
+
+                /* Correctly fill attributes */
+                object_entry->object_attributes.supported_attributes = FSAL_ATTRS_POSIX;
+                object_entry->object_attributes.asked_attributes     = FSAL_ATTRS_POSIX;
 
                 /* LRU */
                 P(filler_data[i].precreated_object_pool.mutex_files_lru);
@@ -603,6 +615,10 @@ int MFSL_async_filler_fill_directories(unsigned int index, unsigned int number, 
                      fsal_status.major, fsal_status.minor);
             exit(1);
         }
+
+        /* Correctly fill attributes */
+        object_entry->object_attributes.supported_attributes = FSAL_ATTRS_POSIX;
+        object_entry->object_attributes.asked_attributes     = FSAL_ATTRS_POSIX;
 
         /* Dir creation */
         fsal_status = FSAL_mkdir(&filler_data[index].precreated_object_pool.dirs_pool_handle,
