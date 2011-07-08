@@ -112,7 +112,10 @@ fsal_status_t MFSL_setattrs(mfsl_object_t      * filehandle,        /* IN */
 	fsal_status = FSAL_setattr_access(p_context, attrib_set, object_attributes);
 
     if(FSAL_IS_ERROR(fsal_status))
+    {
+        LogDebug(COMPONENT_MFSL, "Error in setattr_access. Status: (%u.%u).", fsal_status.major, fsal_status.minor);
         MFSL_return(fsal_status.major, 0);
+    }
 
     
     /* Asynchronous operation description construction
@@ -144,7 +147,13 @@ fsal_status_t MFSL_setattrs(mfsl_object_t      * filehandle,        /* IN */
 
     /* Guess attributes
      ******************/
-    fsal_status = FSAL_merge_attrs(object_attributes, attrib_set, &p_async_op_desc->op_guessed.setattrs.object_attributes);
+    memcpy((void *) &p_async_op_desc->op_guessed.setattrs.object_attributes,
+           (void *) attrib_set,
+           sizeof(fsal_attrib_list_t));
+
+    fsal_status = FSAL_merge_attrs(&p_async_op_desc->op_guessed.setattrs.object_attributes,
+                                   attrib_set,
+                                   &p_async_op_desc->op_guessed.setattrs.object_attributes);
     if(FSAL_IS_ERROR(fsal_status))
         MFSL_return(fsal_status.major, fsal_status.minor);
 

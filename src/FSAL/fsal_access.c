@@ -295,7 +295,7 @@ fsal_status_t FSAL_setattr_access_default(fsal_op_context_t  * p_context,       
 	/* Is it allowed to change time? */
 	if(FSAL_TEST_MASK(candidate_attributes->asked_attributes, 
                           FSAL_ATTR_ATIME | FSAL_ATTR_CREATION | FSAL_ATTR_CTIME | FSAL_ATTR_MTIME)
-	   && global_fs_info.cansettime)
+	   && !global_fs_info.cansettime)
 		Return(ERR_FSAL_ACCESS, 0, INDEX_FSAL_setattr_access);
 
 	/* Atime: user must be owner or be root or have read access */
