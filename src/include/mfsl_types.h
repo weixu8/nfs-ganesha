@@ -57,8 +57,8 @@
 #include "MFSL/MFSL_NULL/mfsl_types.h"
 #endif
 
-#ifdef _USE_MFSL_ASYNC
-#include "MFSL/MFSL_ASYNC/mfsl_types.h"
+#ifdef _USE_MFSL_ASYNC_OLD
+#include "MFSL/MFSL_ASYNC_OLD/mfsl_types.h"
 #endif
 
 #ifdef _USE_MFSL_ASYNC2

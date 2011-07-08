@@ -2665,7 +2665,7 @@ int nfs_export_create_root_entry(exportlist_t * pexportlist, hash_table_t * ht)
 
       for(pcurrent = pexportlist; pcurrent != NULL; pcurrent = pcurrent->next)
         {
-#ifdef _USE_MFSL_ASYNC
+#ifdef _USE_MFSL_ASYNC_OLD
           if(!(pcurrent->options & EXPORT_OPTION_USE_DATACACHE))
             {
               LogMajor(COMPONENT_INIT,

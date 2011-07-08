@@ -266,19 +266,19 @@ cache_entry_t *cache_inode_lookup_sw(cache_entry_t * pentry_parent,
           object_attributes.asked_attributes = pclient->attrmask;
 #ifdef _USE_MFSL
 
-#ifdef _USE_MFSL_ASYNC
+#ifdef _USE_MFSL_ASYNC_OLD
           if(!mfsl_async_is_object_asynchronous(&pentry_parent->mobject))
             {
               /* If the parent is asynchronous, rely on the content of the cache inode parent entry 
                *  /!\ If the fs behind the FSAL is touched in a non-nfs way, there will be huge incoherencies */
-#endif                          /* _USE_MFSL_ASYNC */
+#endif                          /* _USE_MFSL_ASYNC_OLD */
 
               fsal_status = MFSL_lookup(&pentry_parent->mobject,
                                         pname,
                                         pcontext,
                                         &pclient->mfsl_context,
                                         &object_handle, &object_attributes, NULL);
-#ifdef _USE_MFSL_ASYNC
+#ifdef _USE_MFSL_ASYNC_OLD
             }
           else
             {
@@ -288,7 +288,7 @@ cache_entry_t *cache_inode_lookup_sw(cache_entry_t * pentry_parent,
               fsal_status.major = ERR_FSAL_NOENT;
               fsal_status.minor = ENOENT;
             }
-#endif                          /* _USE_MFSL_ASYNC */
+#endif                          /* _USE_MFSL_ASYNC_OLD */
 
 #else
           fsal_status =

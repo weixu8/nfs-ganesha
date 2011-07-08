@@ -748,7 +748,7 @@ cache_inode_status_t cache_inode_readdir_populate(cache_entry_t * pentry_dir,
       *pstatus = CACHE_INODE_BAD_TYPE;
       return *pstatus;
     }
-#ifdef _USE_MFSL_ASYNC
+#ifdef _USE_MFSL_ASYNC_OLD
   /* If entry is asynchronous (via MFSL), it should not be repopulated until it is synced */
   if(MFSL_ASYNC_is_synced(&pentry_dir->mobject) == FALSE)
     {

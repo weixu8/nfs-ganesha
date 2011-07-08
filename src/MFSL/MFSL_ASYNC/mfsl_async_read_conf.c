@@ -157,10 +157,10 @@ fsal_status_t MFSL_load_parameter_from_conf(config_file_t in_config,
     MFSL_return(ERR_FSAL_INVAL, 0);
 
   /* Get the config BLOCK */
-  if((block = config_FindItemByName(in_config, CONF_LABEL_MFSL_ASYNC)) == NULL)
+  if((block = config_FindItemByName(in_config, CONF_LABEL_MFSL_ASYNC_OLD)) == NULL)
     {
       LogMajor(COMPONENT_MFSL, "/!\\ Cannot read item \"%s\" from configuration file\n",
-                 CONF_LABEL_MFSL_ASYNC);
+                 CONF_LABEL_MFSL_ASYNC_OLD);
       MFSL_return(ERR_FSAL_NOENT, 0);
     }
   var_max = config_GetNbItems(block);
@@ -175,7 +175,7 @@ fsal_status_t MFSL_load_parameter_from_conf(config_file_t in_config,
         {
           LogMajor(COMPONENT_MFSL,
               "MFSL ASYNC LOAD PARAMETER: ERROR reading key[%d] from section \"%s\" of configuration file.",
-               var_index, CONF_LABEL_MFSL_ASYNC);
+               var_index, CONF_LABEL_MFSL_ASYNC_OLD);
           MFSL_return(ERR_FSAL_SERVERFAULT, err);
         }
 
@@ -246,7 +246,7 @@ fsal_status_t MFSL_load_parameter_from_conf(config_file_t in_config,
         {
           LogMajor(COMPONENT_MFSL,
               "MFSL ASYNC LOAD PARAMETER: Unknown or unsettable key %s from section \"%s\" of configuration file.",
-               key_name, CONF_LABEL_MFSL_ASYNC);
+               key_name, CONF_LABEL_MFSL_ASYNC_OLD);
           MFSL_return(ERR_FSAL_INVAL, 0);
         }
 

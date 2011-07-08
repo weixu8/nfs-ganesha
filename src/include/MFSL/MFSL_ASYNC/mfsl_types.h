@@ -27,8 +27,8 @@
  * \file    mfsl_types.h
  */
 
-#ifndef _MFSL_ASYNC_TYPES_H
-#define _MFSL_ASYNC_TYPES_H
+#ifndef _MFSL_ASYNC_OLD_TYPES_H
+#define _MFSL_ASYNC_OLD_TYPES_H
 
 #ifndef TRUE
 #define TRUE 1
@@ -41,7 +41,7 @@
  * labels in the config file
  */
 
-#define CONF_LABEL_MFSL_ASYNC          "MFSL_Async"
+#define CONF_LABEL_MFSL_ASYNC_OLD          "MFSL_Async_old"
 
 #define MFSL_ASYNC_DEFAULT_NB_SYNCLETS 10
 #define MFSL_ASYNC_DEFAULT_SLEEP_TIME  60
@@ -350,4 +350,4 @@ fsal_status_t MFSL_ASYNC_RefreshSyncletContext(mfsl_synclet_context_t * pcontext
 
 int MFSL_ASYNC_is_synced(mfsl_object_t * mobject);
 
-#endif                          /* _MFSL_ASYNC_TYPES_H */
+#endif                          /* _MFSL_ASYNC_OLD_TYPES_H */
