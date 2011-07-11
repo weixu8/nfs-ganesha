@@ -920,7 +920,7 @@ fsal_status_t FSAL_link_access(fsal_op_context_t  * pcontext,  /* IN */
   if(!fsal_functions[0].fsal_link_access)
     return FSAL_link_access_default(pcontext, pattrsrc, pattrdest);
 
-  return fsal_functions[0].fsal_link_access(pcontext, pattrsrc, patrdest);
+  return fsal_functions[0].fsal_link_access(pcontext, pattrsrc, pattrdest);
 #endif
 }
 
