@@ -1558,11 +1558,11 @@ void *worker_thread(void *IndexArg)
                index);
 
 #ifdef _USE_MFSL
-  if(FSAL_IS_ERROR(MFSL_GetContext(&pmydata->cache_inode_client.mfsl_context, pfsal_op_ctx ) ;
+  if(FSAL_IS_ERROR(fsal_status = MFSL_GetContext(&pmydata->cache_inode_client.mfsl_context, &pmydata->thread_fsal_context )))
     {
       /* Failed init */
       LogMajor(COMPONENT_DISPATCH,
-               "NFS  WORKER #%lu: Error initing MFSL", index);
+               "NFS  WORKER #%lu: Error initing MFSL. Status: (%d.%d).", index, fsal_status.major, fsal_status.minor);
       exit(1);
     }
 #endif
