@@ -836,6 +836,9 @@ fsal_status_t MFSL_async_filler_init_objects()
     fsal_status_t fsal_status;
     int i;
     int rc;
+    struct timeval now;
+    struct timeval after;
+    struct timeval dif;
 
     /* Init precreated object directory
      **********************************/
@@ -850,12 +853,18 @@ fsal_status_t MFSL_async_filler_init_objects()
 
     /* Dispatch previously created objects
      *************************************/
+    gettimeofday(&now, NULL);
     fsal_status = MFSL_async_filler_dispatch_objects();    
     if(FSAL_IS_ERROR(fsal_status))
         MFSL_return(fsal_status.major, 0);
+    gettimeofday(&after, NULL);
+
+    timersub(&after, &now, &dif);
+    LogDebug(COMPONENT_MFSL, "Objects dispatched in %ld sec %ld usec.", dif.tv_sec, dif.tv_usec);
 
     /* Fill pools
      ************/
+    gettimeofday(&now, NULL);
     for(i=0; i < mfsl_param->nb_synclet; i++)
     {
         LogDebug(COMPONENT_MFSL, "Filling filler pool number %d.", i);
@@ -866,6 +875,9 @@ fsal_status_t MFSL_async_filler_init_objects()
         if((rc = MFSL_async_filler_fill_files(i, mfsl_param->nb_pre_create_files, NULL)) != 0)
             MFSL_return(ERR_FSAL_SERVERFAULT, rc);
     }
+    gettimeofday(&after, NULL);
+    timersub(&after, &now, &dif);
+    LogDebug(COMPONENT_MFSL, "Pools filled in %ld sec %ld usec.", dif.tv_sec, dif.tv_usec);
 
     MFSL_return(ERR_FSAL_NO_ERROR, 0);
 } /* MFSL_async_filler_init_objects */
