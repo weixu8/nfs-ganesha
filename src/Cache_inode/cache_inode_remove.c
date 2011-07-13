@@ -359,6 +359,37 @@ cache_inode_status_t cache_inode_remove_sw(cache_entry_t * pentry,             /
         }
     }
 
+#ifdef _USE_MFSL
+  if(to_remove_entry->internal_md.type == DIR_BEGINNING &&
+     to_remove_entry->object.dir_begin.has_been_readdir == CACHE_INODE_NO)
+  {
+      LogDebug(COMPONENT_CACHE_INODE, "Trying to remove a directory we didn't populate");
+      if(cache_inode_readdir_populate(to_remove_entry, ht, pclient, pcontext, pstatus) != CACHE_INODE_SUCCESS)
+      {
+          LogMajor(COMPONENT_CACHE_INODE, "Error while populating directory.");
+          if(use_mutex)
+          {
+              V_w(&to_remove_entry->lock);
+              V_w(&pentry->lock);
+          }
+
+          return *pstatus;
+      }
+
+      if(cache_inode_is_dir_empty(to_remove_entry) != CACHE_INODE_SUCCESS)
+        {
+          if(use_mutex)
+          {
+              V_w(&to_remove_entry->lock);
+              V_w(&pentry->lock);
+          }
+
+          *pstatus = CACHE_INODE_DIR_NOT_EMPTY;
+          return *pstatus;
+        }
+  }
+#endif
+
   /* We have to get parent's fsal handle */
   parent_entry = pentry;
 
