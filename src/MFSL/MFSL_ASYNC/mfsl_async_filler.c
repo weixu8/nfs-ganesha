@@ -1029,6 +1029,10 @@ void * mfsl_async_filler_thread(void * arg)
     fsal_export_context_t  fsal_export_context;
     LRU_status_t           lru_status;
 
+    struct timeval         current_time;
+    struct timeval         next_time;
+    struct timespec        wakeup_time;
+
     int remaining_dirs;
     int remaining_files;
 
@@ -1163,15 +1167,30 @@ void * mfsl_async_filler_thread(void * arg)
         remaining_dirs  = (my_filler_data->precreated_object_pool.dirs_lru->nb_entry  - my_filler_data->precreated_object_pool.dirs_lru->nb_invalid);
         V(my_filler_data->precreated_object_pool.mutex_dirs_lru);
 
+        /* Current time */
+        if(gettimeofday(&current_time, NULL) != 0)
+        {
+            /* Could'not get time of day... */
+            LogCrit(COMPONENT_MFSL, "Cannot get time of day...");
+            exit(1);
+        }
+        next_time = current_time;
+        next_time.tv_sec += mfsl_param->AFT_timeout;
+
+        wakeup_time.tv_sec  = next_time.tv_sec;
+        wakeup_time.tv_nsec = (next_time.tv_usec * 1000);
+
         LogDebug(COMPONENT_MFSL, "Remaining files: %d. Remaining directories: %d.", remaining_files, remaining_dirs);
 
         /* Wait for a signal from MFSL_get_precreated_object */
         P(my_filler_data->mutex_watermark_condvar);
-        while(   (remaining_dirs  > mfsl_param->AFT_low_watermark )
-              && (remaining_files > mfsl_param->AFT_low_watermark ))
+        while(   (remaining_dirs  >= mfsl_param->AFT_low_watermark )
+              && (remaining_files >= mfsl_param->AFT_low_watermark )
+              && timercmp(&current_time, &next_time, <))
         {
-            rc = pthread_cond_wait(&my_filler_data->watermark_condvar, &my_filler_data->mutex_watermark_condvar);
-            if(rc != 0)
+            rc = pthread_cond_timedwait(&my_filler_data->watermark_condvar, &my_filler_data->mutex_watermark_condvar, &wakeup_time);
+
+            if((rc != 0) && (rc != ETIMEDOUT))
                 LogMajor(COMPONENT_MFSL, "pthread_cond_wait failed: %d.", rc);
 
             /* Compute remaining objects again */
@@ -1182,10 +1201,51 @@ void * mfsl_async_filler_thread(void * arg)
             P(my_filler_data->precreated_object_pool.mutex_dirs_lru);
             remaining_dirs  = (my_filler_data->precreated_object_pool.dirs_lru->nb_entry  - my_filler_data->precreated_object_pool.dirs_lru->nb_invalid);
             V(my_filler_data->precreated_object_pool.mutex_dirs_lru);
+
+            /* We had to compute remaining objects first to this test */
+            if(rc == ETIMEDOUT)
+                break;
         }
         V(my_filler_data->mutex_watermark_condvar);
 
         LogDebug(COMPONENT_MFSL, "Filler %d has been wake up.", my_filler_data->index);
+
+        if(rc == ETIMEDOUT)
+        {
+            /* Low activity, fill with some objects */
+            LogDebug(COMPONENT_MFSL, "Filler timeout! Fill with some objects.");
+
+            /* Directories */
+            if(remaining_dirs < mfsl_param->nb_pre_create_dirs)
+            {
+                rc = MFSL_async_filler_fill_directories(my_filler_data->index, mfsl_param->AFT_nb_fill_timeout, NULL);
+                if(rc != 0)
+                {
+                    LogCrit(COMPONENT_MFSL, "Impossible to fill directories for filler #%d.", my_filler_data->index);
+                }
+
+                /* Garbage collect */
+                if(LRU_gc_invalid(my_filler_data->precreated_object_pool.dirs_lru, NULL) != LRU_LIST_SUCCESS)
+                    LogCrit(COMPONENT_MFSL, "Impossible to garbage collect dirs_lru in filler %d.", my_filler_data->index);
+            }
+
+            /* Files */
+            if(remaining_files < mfsl_param->nb_pre_create_files)
+            {
+                rc = MFSL_async_filler_fill_files(my_filler_data->index, mfsl_param->AFT_nb_fill_timeout, NULL);
+                if(rc != 0)
+                {
+                    LogCrit(COMPONENT_MFSL, "Impossible to fill files for filler #%d.", my_filler_data->index);
+                }
+
+                /* Garbage collect */
+                if(LRU_gc_invalid(my_filler_data->precreated_object_pool.dirs_lru, NULL) != LRU_LIST_SUCCESS)
+                    LogCrit(COMPONENT_MFSL, "Impossible to garbage collect dirs_lru in filler %d.", my_filler_data->index);
+            }
+
+            /* Next run */
+            continue;
+        }
 
         if(remaining_dirs < mfsl_param->AFT_low_watermark){
             /* We're below watermark, fill directories */

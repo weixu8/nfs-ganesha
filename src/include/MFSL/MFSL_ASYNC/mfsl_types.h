@@ -75,7 +75,9 @@ typedef struct mfsl_parameter__
     LRU_parameter_t lru_param;                      /**< Parameter to LRU for async op                    */
     /* Asynchronous Filler Thread */
     unsigned int    AFT_low_watermark;
+    unsigned int    AFT_timeout;
     unsigned int    AFT_nb_fill_critical;
+    unsigned int    AFT_nb_fill_timeout;
 } mfsl_parameter_t;
 
 typedef struct mfsl_context__

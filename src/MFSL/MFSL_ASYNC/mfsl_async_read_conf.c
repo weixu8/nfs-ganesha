@@ -103,7 +103,7 @@ fsal_status_t MFSL_SetDefault_parameter(mfsl_parameter_t * out_parameter /* IN/O
     out_parameter->async_window_usec    = 0;
     out_parameter->nb_before_gc         = 500;
 
-    out_parameter->ADT_sleep_time = 60000;
+    out_parameter->ADT_sleep_time = 60;
 
     out_parameter->nb_pre_create_dirs  = 10;
     out_parameter->nb_pre_create_files = 10;
@@ -115,7 +115,9 @@ fsal_status_t MFSL_SetDefault_parameter(mfsl_parameter_t * out_parameter /* IN/O
     out_parameter->lru_param.entry_to_str       = mfsl_async_print_pending_op;
 
     out_parameter->AFT_low_watermark    = 3;
+    out_parameter->AFT_timeout          = 20;
     out_parameter->AFT_nb_fill_critical = 5;
+    out_parameter->AFT_nb_fill_timeout  = 1;
 
     MFSL_return(ERR_FSAL_NO_ERROR, 0);
 } /* MFSL_SetDefault_parameter */
