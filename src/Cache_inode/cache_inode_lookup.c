@@ -272,12 +272,32 @@ cache_entry_t *cache_inode_lookup_sw(cache_entry_t * pentry_parent,
               /* If the parent is asynchronous, rely on the content of the cache inode parent entry 
                *  /!\ If the fs behind the FSAL is touched in a non-nfs way, there will be huge incoherencies */
 #endif                          /* _USE_MFSL_ASYNC_OLD */
+#ifdef _USE_MFSL_ASYNC
+          P(pentry_parent->mobject.lock);
+          if(MFSL_async_object_is_synchronous(&pentry_parent->mobject))
+          {
+              /* If the parent is asynchronous, rely on the content of the cache inode parent entry
+               * /!\ If the fs behind the FSAL is touched in a non-nfs way, there will be huge incoherencies
+               **********************************************************************************************/
+#endif /* _USE_MFSL_ASYNC */
 
               fsal_status = MFSL_lookup(&pentry_parent->mobject,
                                         pname,
                                         pcontext,
                                         &pclient->mfsl_context,
                                         &object_handle, &object_attributes, NULL);
+#ifdef _USE_MFSL_ASYNC
+          }
+          else
+          {
+              LogDebug(COMPONENT_CACHE_INODE,
+                       "cache_inode_lookup chose to bypass FSAL and trusted his cache for name=%s",
+                       pname->name);
+              fsal_status.major = ERR_FSAL_NOENT;
+              fsal_status.minor = ENOENT;
+          }
+          V(pentry_parent->mobject.lock);
+#endif /* _USE_MFSL_ASYNC */
 #ifdef _USE_MFSL_ASYNC_OLD
             }
           else

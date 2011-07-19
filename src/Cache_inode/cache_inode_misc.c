@@ -415,6 +415,15 @@ cache_entry_t *cache_inode_new_entry(cache_inode_fsal_data_t * pfsdata,
       pentry->object.file.handle = pfsdata->handle;
 #ifdef _USE_MFSL
       pentry->mobject.handle = pentry->object.file.handle;
+#ifdef _USE_MFSL_ASYNC
+/*      if(pthread_mutex_init(&pentry->mobject.lock, NULL) != 0)
+      {
+          LogCrit(COMPONENT_CACHE_INODE, "Impossible to initialize mfsl_object lock.");
+          exit(1);
+      }
+
+      pentry->mobject.p_last_op_desc = NULL;*/
+#endif /* _USE_MFSL_ASYNC */
 #ifdef _USE_MFSL_PROXY
       pentry->mobject.plock = &pentry->lock;
 #endif

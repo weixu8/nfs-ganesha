@@ -106,6 +106,7 @@ fsal_status_t MFSL_rename(mfsl_object_t      * old_parentdir_handle, /* IN */
                           fsal_attrib_list_t * ptgt_dir_attributes,  /* [ IN/OUT ] */
                           void               * pextra)               /* IN */
 {
+    /** @todo change this to add object handle */
 	fsal_status_t fsal_status;
 
 	fsal_attrib_list_t attr_new_srcdir;
@@ -238,6 +239,28 @@ fsal_status_t MFSL_rename(mfsl_object_t      * old_parentdir_handle, /* IN */
      */
     p_async_op_desc->fsal_op_context  = *p_context;
     p_async_op_desc->ptr_mfsl_context = (caddr_t) p_mfsl_context;
+
+    p_async_op_desc->concerned_objects[0] = old_parentdir_handle;
+    p_async_op_desc->concerned_objects[1] = new_parentdir_handle;
+    p_async_op_desc->concerned_objects[2] = NULL;
+
+    P(old_parentdir_handle->lock);
+    if(!old_parentdir_handle->p_last_op_desc ||
+        timercmp(&old_parentdir_handle->last_op_time, &p_async_op_desc->op_time, < ))
+    {
+        old_parentdir_handle->p_last_op_desc = p_async_op_desc;
+        old_parentdir_handle->last_op_time   = p_async_op_desc->op_time;
+    }
+    V(old_parentdir_handle->lock);
+
+    P(new_parentdir_handle->lock);
+    if(!new_parentdir_handle->p_last_op_desc ||
+        timercmp(&new_parentdir_handle->last_op_time, &p_async_op_desc->op_time, < ))
+    {
+        new_parentdir_handle->p_last_op_desc = p_async_op_desc;
+        new_parentdir_handle->last_op_time   = p_async_op_desc->op_time;
+    }
+    V(new_parentdir_handle->lock);
 
 
     /* Post the asynchronous operation description

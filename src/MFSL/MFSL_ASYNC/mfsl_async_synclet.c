@@ -50,6 +50,9 @@ extern unsigned int       end_of_mfsl; /* from mfsl_async_init.c */
 pthread_t           * synclet_thread;  /* Synclet Thread Array */
 mfsl_synclet_data_t * synclet_data;    /* Synclet Data Array */
 
+extern struct timeval  last_async_window_check;       /* time of last window check, from dispatcher.c */
+extern pthread_mutex_t last_async_window_check_mutex; /* mutex associated with previously declared timeval, from dispatcher.c */
+
 
 /**
  *
@@ -68,6 +71,8 @@ fsal_status_t MFSL_async_process_async_op(mfsl_async_op_desc_t * p_async_op_desc
     fsal_status_t    fsal_status;
     int              max_tries  = 2;  /* We will retry once if possible */
     int              try_number = 1;  /* First try */
+    mfsl_object_t  * current_object;
+    int              i;
 
     SetNameFunction("MFSL_async_process_async_op");
 
@@ -136,6 +141,21 @@ fsal_status_t MFSL_async_process_async_op(mfsl_async_op_desc_t * p_async_op_desc
     LogDebug(COMPONENT_MFSL, "Operation (%u, %s) processed",
             p_async_op_desc->op_type,
             mfsl_async_op_name[p_async_op_desc->op_type]);
+
+    /* Is this the last operation on this data? */
+    for(i=0; p_async_op_desc->concerned_objects[i] != NULL; i++)
+    {
+        current_object = p_async_op_desc->concerned_objects[i];
+        P(current_object->lock);
+        P(last_async_window_check_mutex);
+        if((current_object->p_last_op_desc == p_async_op_desc) ||
+            timercmp(&current_object->last_op_time, &last_async_window_check, <))
+        {
+            current_object->p_last_op_desc = NULL;
+        }
+        V(last_async_window_check_mutex);
+        V(current_object->lock);
+    }
 
     /* Free the previously allocated structures */
     p_mfsl_context = (mfsl_context_t *) p_async_op_desc->ptr_mfsl_context;

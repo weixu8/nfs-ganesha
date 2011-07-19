@@ -54,6 +54,9 @@ pthread_t         dispatcher_thread;       /* Dispatcher Thread. */
 LRU_list_t      * dispatcher_lru;          /* The LRU list that owns posted operations. */
 pthread_mutex_t   dispatcher_lru_mutex;    /* Mutex associated with previously declared list. */
 
+struct timeval  last_async_window_check;       /* time of last window check */
+pthread_mutex_t last_async_window_check_mutex; /* mutex associated with previously declared timeval */
+
 extern mfsl_synclet_data_t * synclet_data; /* Synclet Data Array, from mfsl_async_synclet.c */
 
 /**
@@ -159,6 +162,13 @@ void * mfsl_async_dispatcher_thread(void * arg)
         exit(1);
     }
 
+    /* Initialize last_async_window_check_mutex */
+    if(pthread_mutex_init(&last_async_window_check_mutex, NULL) != 0)
+    {
+        LogCrit(COMPONENT_MFSL, "Impossible to initialize last_async_window_check_mutex.");
+        exit(1);
+    }
+
     /*************************
      *         Work
      *************************/
@@ -177,6 +187,10 @@ void * mfsl_async_dispatcher_thread(void * arg)
             LogCrit(COMPONENT_MFSL, "Cannot get time of day...");
             exit(1);
         }
+
+        P(last_async_window_check_mutex);
+        last_async_window_check = current_time;
+        V(last_async_window_check_mutex);
 
         /* Loop on dispatcher_lru */
         P(dispatcher_lru_mutex);

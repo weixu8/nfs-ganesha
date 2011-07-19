@@ -314,6 +314,31 @@ fsal_status_t MFSL_rcp_by_fileid(mfsl_object_t * filehandle,    /* IN */
                             fileid, p_context, p_local_path, transfer_opt);
 }                               /* MFSL_rcp_by_fileid */
 
+/**
+ *
+ * MFSL_async_object_is_synchronous: returns TRUE if the object is synced, FALSE is asynchronous.
+ *
+ * Returns TRUE if the object is synced, FALSE is asynchronous.
+ *
+ * @param p_mfsl_object [IN] pointer to MFSL object to be tested
+ *
+ * @return  TRUE if the object is synced, FALSE is asynchronous.
+ *
+ */
+int MFSL_async_object_is_synchronous(mfsl_object_t * p_mfsl_object)
+{
+    if(p_mfsl_object == NULL)
+        return FALSE;
+
+    if(p_mfsl_object->p_last_op_desc == NULL)
+        return TRUE;
+
+    /** @todo should we test if operation is out of asynchronous window? */
+
+    return FALSE;
+} /* MFSL_async_object_is_synchronous */
+
+
 #ifndef _USE_SWIG
 
 /******************************************************

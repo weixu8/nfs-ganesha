@@ -61,6 +61,9 @@
 #include "err_mfsl.h"
 #include "LRU_List.h"
 
+
+/* Misc
+ ******/
 typedef struct mfsl_parameter__
 {
     unsigned int    nb_pre_async_op_desc;           /**< Number of preallocated Async Op descriptors      */
@@ -89,7 +92,10 @@ typedef struct mfsl_context__
 
 typedef struct mfsl_object__
 {
-    fsal_handle_t handle;
+    fsal_handle_t                 handle;
+    struct mfsl_async_op_desc__ * p_last_op_desc;
+    struct timeval                last_op_time;
+    pthread_mutex_t               lock;
 } mfsl_object_t;
 
 typedef struct mfsl_file__
@@ -170,7 +176,6 @@ fsal_status_t MFSL_async_synclet_init(void * arg);
 
 /* Operations management
  ***********************/
-
 /* unlink */
 typedef struct mfsl_async_op_unlink_args__
 {
@@ -299,7 +304,6 @@ typedef enum mfsl_async_op_type__
     MFSL_ASYNC_OP_CREATE   = 5,
     MFSL_ASYNC_OP_REMOVE   = 6,
     MFSL_ASYNC_OP_TRUNCATE = 7,
-    MFSL_ASYNC_OP_SYMLINK  = 8
 } mfsl_async_op_type_t;
 
 static const char *mfsl_async_op_name[] =
@@ -312,7 +316,6 @@ static const char *mfsl_async_op_name[] =
     "MFSL_ASYNC_OP_CREATE",
     "MFSL_ASYNC_OP_REMOVE",
     "MFSL_ASYNC_OP_TRUNCATE",
-    "MFSL_ASYNC_OP_SYMLINK"
 };
 
 typedef struct mfsl_async_op_desc__
@@ -322,11 +325,11 @@ typedef struct mfsl_async_op_desc__
     mfsl_async_op_args_t   op_args;    /* arguments to pass to operation function */
     mfsl_async_op_res_t    op_res;     /* will contain results of the operation */
     mfsl_async_op_res_t    op_guessed; /* what we computed, to check */
-    mfsl_object_t        * op_mobject;
     fsal_status_t (*op_func) (struct mfsl_async_op_desc__ *); /* function to apply on the operation */
     fsal_op_context_t      fsal_op_context;
     caddr_t                ptr_mfsl_context; /* pointer tothe mfsl_context, used in synclet */
     unsigned int           related_synclet_index;
+    mfsl_object_t        * concerned_objects[3];
 } mfsl_async_op_desc_t;
 
 /* functions */
@@ -334,11 +337,16 @@ fsal_status_t MFSL_async_post(mfsl_async_op_desc_t * p_operation_description);
 
 unsigned int MFSL_async_choose_synclet(mfsl_async_op_desc_t * candidate_async_op);
 
+int MFSL_async_object_is_synchronous(mfsl_object_t * p_mfsl_object);
+
+
 /* Precreated files management
  *****************************/
 /* Functions */
 fsal_status_t MFSL_async_get_precreated_object(unsigned int filler_index,           /* IN */
                                                fsal_nodetype_t type,                /* IN */
                                                mfsl_precreated_object_t ** object); /* IN/OUT */
+
+
 
 #endif                          /* _MFSL_ASYNC_TYPES_H */
