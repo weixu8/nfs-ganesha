@@ -632,6 +632,8 @@ int MFSL_async_filler_fill_directories(unsigned int index, unsigned int number, 
         {
             LogCrit(COMPONENT_MFSL, "Impossible to precreate a new directory. Status: (%u.%u).",
                     fsal_status.major, fsal_status.minor);
+            if(pp_object == NULL)
+                V(filler_data[index].precreated_object_pool.mutex_dirs_lru);
             return 1;
         }
         LogDebug(COMPONENT_MFSL, "%s/%d/dirs/%s created.",
@@ -779,6 +781,8 @@ int MFSL_async_filler_fill_files(unsigned int index, int number, mfsl_precreated
         {
             LogCrit(COMPONENT_MFSL, "Impossible to precreate a new file. Status: (%u.%u).",
                     fsal_status.major, fsal_status.minor);
+            if(object == NULL)
+                V(filler_data[index].precreated_object_pool.mutex_files_lru);
             return 1;
         }
         LogDebug(COMPONENT_MFSL, "%s/%d/files/%s created.",
@@ -1097,6 +1101,13 @@ void * mfsl_async_filler_thread(void * arg)
     {
         LogCrit(COMPONENT_MFSL, "Impossible to initialize files_lru for filler %d. lru_status: %d",
                 my_filler_data->index, (int) lru_status);
+        exit(1);
+    }
+
+    if(pthread_mutex_init(&filler_data[my_filler_data->index].precreated_object_pool.mutex_pool_objects, NULL)     != 0)
+    {
+        LogCrit(COMPONENT_MFSL, "Impossible to initialize mutex_pool_objects for filler %d.",
+                my_filler_data->index);
         exit(1);
     }
 

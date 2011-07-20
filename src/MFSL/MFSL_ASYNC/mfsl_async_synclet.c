@@ -257,6 +257,12 @@ void * mfsl_async_synclet_thread(void * arg)
         exit(1);
     }
 
+    if(pthread_mutex_init(&synclet_data[my_synclet_data->index].mutex_failed_op_lru, NULL)     != 0)
+    {
+        LogCrit(COMPONENT_MFSL, "Impossible to initialize mutex_failed_op_lru for synclet %d.", my_synclet_data->index);
+        exit(1);
+    }
+
     if((synclet_data[my_synclet_data->index].failed_op_lru = LRU_Init(mfsl_param->lru_param, &lru_status)) == NULL)
     {
         LogCrit(COMPONENT_MFSL, "Impossible to initialize failed_op_lru for synclet %d. lru_status: %d",
