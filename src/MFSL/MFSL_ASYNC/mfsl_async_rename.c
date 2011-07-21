@@ -244,23 +244,19 @@ fsal_status_t MFSL_rename(mfsl_object_t      * old_parentdir_handle, /* IN */
     p_async_op_desc->concerned_objects[1] = new_parentdir_handle;
     p_async_op_desc->concerned_objects[2] = NULL;
 
-    P(old_parentdir_handle->lock);
     if(!old_parentdir_handle->p_last_op_desc ||
         timercmp(&old_parentdir_handle->last_op_time, &p_async_op_desc->op_time, < ))
     {
         old_parentdir_handle->p_last_op_desc = p_async_op_desc;
         old_parentdir_handle->last_op_time   = p_async_op_desc->op_time;
     }
-    V(old_parentdir_handle->lock);
 
-    P(new_parentdir_handle->lock);
     if(!new_parentdir_handle->p_last_op_desc ||
         timercmp(&new_parentdir_handle->last_op_time, &p_async_op_desc->op_time, < ))
     {
         new_parentdir_handle->p_last_op_desc = p_async_op_desc;
         new_parentdir_handle->last_op_time   = p_async_op_desc->op_time;
     }
-    V(new_parentdir_handle->lock);
 
 
     /* Post the asynchronous operation description

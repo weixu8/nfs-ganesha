@@ -95,7 +95,6 @@ typedef struct mfsl_object__
     fsal_handle_t                 handle;
     struct mfsl_async_op_desc__ * p_last_op_desc;
     struct timeval                last_op_time;
-    pthread_mutex_t               lock;
 } mfsl_object_t;
 
 typedef struct mfsl_file__

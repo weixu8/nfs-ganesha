@@ -195,16 +195,6 @@ cache_inode_create(cache_entry_t * pentry_parent,
         }
 
     object_attributes.asked_attributes = pclient->attrmask;
-#ifdef _USE_MFSL_ASYNC
-    /* Initialize object_handle */
-    if(pthread_mutex_init(&object_handle.lock, NULL) != 0)
-    {
-        LogCrit(COMPONENT_CACHE_INODE, "Impossible to initialize mfsl_object lock.");
-        exit(1);
-    }
-
-    object_handle.p_last_op_desc = NULL;
-#endif
     switch (type)
         {
         case REGULAR_FILE:
