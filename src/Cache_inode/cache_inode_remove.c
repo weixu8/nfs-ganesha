@@ -261,6 +261,7 @@ cache_inode_status_t cache_inode_remove_sw(cache_entry_t * pentry,             /
   cache_inode_status_t status;
   cache_content_status_t cache_content_status;
   int to_remove_numlinks = 0;
+  fsal_accessflags_t access_mask = 0;
 #ifdef _USE_MFSL_ASYNC
   fsal_attrib_list_t object_attr;
 #endif
@@ -278,8 +279,10 @@ cache_inode_status_t cache_inode_remove_sw(cache_entry_t * pentry,             /
     P_w(&pentry->lock);
 
   /* Check if caller is allowed to perform the operation */
+  access_mask = FSAL_MODE_MASK_SET(FSAL_W_OK) |
+                FSAL_ACE4_MASK_SET(FSAL_ACE_PERM_DELETE_CHILD);
   if((status = cache_inode_access_sw(pentry,
-                                     FSAL_W_OK,
+                                     access_mask,
                                      ht,
                                      pclient,
                                      pcontext, &status, FALSE)) != CACHE_INODE_SUCCESS)
