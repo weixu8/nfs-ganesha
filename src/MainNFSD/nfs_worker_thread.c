@@ -2390,12 +2390,17 @@ void *worker_thread(void *IndexArg)
       if(pmydata->pause_state == STATE_AWAKE)
         {
           pmydata->gc_in_progress = TRUE;
-
+#ifdef _USE_MFSL_ASYNC
+          P(pmydata->cache_inode_client.mfsl_context.lock);
+#endif /* _USE_MFSL_ASYNC*/
       fsal_status = MFSL_RefreshContext(&pmydata->cache_inode_client.mfsl_context,
 #ifdef _USE_SHARED_FSAL
                                         &pmydata->thread_fsal_context[pexport->fsalid]);
 #else
                                         &pmydata->thread_fsal_context);
+#ifdef _USE_MFSL_ASYNC
+          V(pmydata->cache_inode_client.mfsl_context.lock);
+#endif /* _USE_MFSL_ASYNC*/
 #endif
 
           if(FSAL_IS_ERROR(fsal_status))
