@@ -142,19 +142,6 @@ fsal_status_t MFSL_async_process_async_op(mfsl_async_op_desc_t * p_async_op_desc
             p_async_op_desc->op_type,
             mfsl_async_op_name[p_async_op_desc->op_type]);
 
-    /* Is this the last operation on this data? */
-    for(i=0; p_async_op_desc->concerned_objects[i] != NULL; i++)
-    {
-        current_object = p_async_op_desc->concerned_objects[i];
-        P(last_async_window_check_mutex);
-        if((current_object->p_last_op_desc == p_async_op_desc) ||
-            timercmp(&current_object->last_op_time, &last_async_window_check, <))
-        {
-            current_object->p_last_op_desc = NULL;
-        }
-        V(last_async_window_check_mutex);
-    }
-
     /* Free the previously allocated structures */
     p_mfsl_context = (mfsl_context_t *) p_async_op_desc->ptr_mfsl_context;
 
@@ -270,6 +257,22 @@ void * mfsl_async_synclet_thread(void * arg)
 
     synclet_data[my_synclet_data->index].passcounter = 0;
 
+    /* Asynchronism management */
+    if(pthread_mutex_init(&synclet_data[my_synclet_data->index].last_op_time_mutex, NULL)     != 0)
+    {
+        LogCrit(COMPONENT_MFSL, "Impossible to initialize last_op_time_mutex for synclet %d.", my_synclet_data->index);
+        exit(1);
+    }
+
+    P(synclet_data[my_synclet_data->index].last_op_time_mutex);
+    if(gettimeofday(&synclet_data[my_synclet_data->index].last_op_time, NULL) != 0)
+    {
+         /* Could'not get time of day... */
+         LogCrit(COMPONENT_MFSL, "Cannot get time of day...");
+         exit(1);
+    }
+    V(synclet_data[my_synclet_data->index].last_op_time_mutex);
+
 
     /*************************
      *         Work
@@ -306,6 +309,16 @@ void * mfsl_async_synclet_thread(void * arg)
                 /* Invalidate entry. */
                 if(LRU_invalidate(my_synclet_data->op_lru, current_lru_entry) != LRU_LIST_SUCCESS)
                     LogCrit(COMPONENT_MFSL, "Impossible to invalidate lru_entry in synclet_data %d.", my_synclet_data->index);
+
+                /* Get time to manage asynchronism */
+                P(synclet_data[my_synclet_data->index].last_op_time_mutex);
+                if(gettimeofday(&synclet_data[my_synclet_data->index].last_op_time, NULL) != 0)
+                {
+                     /* Could'not get time of day... */
+                     LogCrit(COMPONENT_MFSL, "Cannot get time of day...");
+                     exit(1);
+                }
+                V(synclet_data[my_synclet_data->index].last_op_time_mutex);
             }
         }
 

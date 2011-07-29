@@ -456,8 +456,9 @@ cache_entry_t *cache_inode_new_entry(cache_inode_fsal_data_t * pfsdata,
 #ifdef _USE_MFSL
       pentry->mobject.handle = pentry->object.file.handle;
 #ifdef _USE_MFSL_ASYNC
-/*      pentry->mobject.synclet_index = MFSL_OBJECT_IS_SYNCHRONOUS;*/
-      pentry->mobject.p_last_op_desc = NULL;
+      pentry->mobject.last_synclet_index   = -1;
+      pentry->mobject.last_op_time.tv_sec  =  0;
+      pentry->mobject.last_op_time.tv_usec =  0;
 #endif /* _USE_MFSL_ASYNC */
 #ifdef _USE_MFSL_PROXY
       pentry->mobject.plock = &pentry->lock;

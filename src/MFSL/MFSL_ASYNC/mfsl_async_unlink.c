@@ -189,23 +189,11 @@ fsal_status_t MFSL_unlink(mfsl_object_t      * parentdir_handle,       /* IN */
     p_async_op_desc->ptr_mfsl_context                    = (caddr_t) p_mfsl_context;
 
     /* Manage asynchronism */
-    p_async_op_desc->concerned_objects[0] = parentdir_handle;
-    p_async_op_desc->concerned_objects[1] = object_handle;
-    p_async_op_desc->concerned_objects[2] = NULL;
+    parentdir_handle->last_op_time       = p_async_op_desc->op_time;
+    parentdir_handle->last_synclet_index = p_async_op_desc->related_synclet_index;
 
-    if(!parentdir_handle->p_last_op_desc ||
-        timercmp(&parentdir_handle->last_op_time, &p_async_op_desc->op_time, < ))
-    {
-        parentdir_handle->p_last_op_desc = p_async_op_desc;
-        parentdir_handle->last_op_time   = p_async_op_desc->op_time;
-    }
-
-    if(!object_handle->p_last_op_desc ||
-        timercmp(&object_handle->last_op_time, &p_async_op_desc->op_time, < ))
-    {
-        object_handle->p_last_op_desc = p_async_op_desc;
-        object_handle->last_op_time   = p_async_op_desc->op_time;
-    }
+    object_handle->last_op_time          = p_async_op_desc->op_time;
+    object_handle->last_synclet_index    = p_async_op_desc->related_synclet_index;
 
 
     /* Post the asynchronous operation description to the dispatcher

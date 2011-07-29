@@ -243,23 +243,12 @@ fsal_status_t MFSL_rename(mfsl_object_t      * old_parentdir_handle, /* IN */
     p_async_op_desc->fsal_op_context  = *p_context;
     p_async_op_desc->ptr_mfsl_context = (caddr_t) p_mfsl_context;
 
-    p_async_op_desc->concerned_objects[0] = old_parentdir_handle;
-    p_async_op_desc->concerned_objects[1] = new_parentdir_handle;
-    p_async_op_desc->concerned_objects[2] = NULL;
+    /* Manage asynchronism */
+    old_parentdir_handle->last_op_time       = p_async_op_desc->op_time;
+    old_parentdir_handle->last_synclet_index = p_async_op_desc->related_synclet_index;
 
-    if(!old_parentdir_handle->p_last_op_desc ||
-        timercmp(&old_parentdir_handle->last_op_time, &p_async_op_desc->op_time, < ))
-    {
-        old_parentdir_handle->p_last_op_desc = p_async_op_desc;
-        old_parentdir_handle->last_op_time   = p_async_op_desc->op_time;
-    }
-
-    if(!new_parentdir_handle->p_last_op_desc ||
-        timercmp(&new_parentdir_handle->last_op_time, &p_async_op_desc->op_time, < ))
-    {
-        new_parentdir_handle->p_last_op_desc = p_async_op_desc;
-        new_parentdir_handle->last_op_time   = p_async_op_desc->op_time;
-    }
+    new_parentdir_handle->last_op_time       = p_async_op_desc->op_time;
+    new_parentdir_handle->last_synclet_index = p_async_op_desc->related_synclet_index;
 
 
     /* Post the asynchronous operation description

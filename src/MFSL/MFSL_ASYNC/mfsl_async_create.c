@@ -237,23 +237,12 @@ fsal_status_t MFSL_create(mfsl_object_t      * parent_directory_handle, /* IN */
     p_async_op_desc->fsal_op_context                     = *p_context;
     p_async_op_desc->ptr_mfsl_context                    = (caddr_t) p_mfsl_context;
 
-    p_async_op_desc->concerned_objects[0] = parent_directory_handle;
-    p_async_op_desc->concerned_objects[1] = object_handle;
-    p_async_op_desc->concerned_objects[2] = NULL;
+    /* Manage asynchronism */
+    parent_directory_handle->last_op_time       = p_async_op_desc->op_time;
+    parent_directory_handle->last_synclet_index = p_async_op_desc->related_synclet_index;
 
-    if(!parent_directory_handle->p_last_op_desc ||
-        timercmp(&parent_directory_handle->last_op_time, &p_async_op_desc->op_time, < ))
-    {
-        parent_directory_handle->p_last_op_desc = p_async_op_desc;
-        parent_directory_handle->last_op_time   = p_async_op_desc->op_time;
-    }
-
-    if(!object_handle->p_last_op_desc ||
-        timercmp(&object_handle->last_op_time, &p_async_op_desc->op_time, < ))
-    {
-        object_handle->p_last_op_desc = p_async_op_desc;
-        object_handle->last_op_time   = p_async_op_desc->op_time;
-    }
+    object_handle->last_op_time       = p_async_op_desc->op_time;
+    object_handle->last_synclet_index = p_async_op_desc->related_synclet_index;
 
 
     /* Free precreated_object

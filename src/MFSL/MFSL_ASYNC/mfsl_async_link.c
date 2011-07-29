@@ -191,23 +191,12 @@ fsal_status_t MFSL_link(mfsl_object_t      * target_handle,  /* IN */
     p_async_op_desc->fsal_op_context  = *p_context;
     p_async_op_desc->ptr_mfsl_context = (caddr_t) p_mfsl_context;
 
-    p_async_op_desc->concerned_objects[0] = target_handle;
-    p_async_op_desc->concerned_objects[1] = dir_handle;
-    p_async_op_desc->concerned_objects[2] = NULL;
+    /* Manage asynchronism */
+    target_handle->last_op_time       = p_async_op_desc->op_time;
+    target_handle->last_synclet_index = p_async_op_desc->related_synclet_index;
 
-    if(!target_handle->p_last_op_desc ||
-        timercmp(&target_handle->last_op_time, &p_async_op_desc->op_time, < ))
-    {
-        target_handle->p_last_op_desc = p_async_op_desc;
-        target_handle->last_op_time   = p_async_op_desc->op_time;
-    }
-
-    if(!dir_handle->p_last_op_desc ||
-        timercmp(&dir_handle->last_op_time, &p_async_op_desc->op_time, < ))
-    {
-        dir_handle->p_last_op_desc = p_async_op_desc;
-        dir_handle->last_op_time   = p_async_op_desc->op_time;
-    }
+    dir_handle->last_op_time       = p_async_op_desc->op_time;
+    dir_handle->last_synclet_index = p_async_op_desc->related_synclet_index;
 
 
     /* Post the asynchronous operation description

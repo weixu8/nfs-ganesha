@@ -44,6 +44,8 @@
 /* We want to use memcpy() */
 #include <string.h>
 
+extern mfsl_synclet_data_t * synclet_data; /* Synclet Data Array, from mfsl_async_synclet.c */
+
 /******************************************************
  *              Common Filesystem calls.
  ******************************************************/
@@ -316,13 +318,13 @@ fsal_status_t MFSL_rcp_by_fileid(mfsl_object_t * filehandle,    /* IN */
 
 /**
  *
- * MFSL_async_object_is_synchronous: returns TRUE if the object is synced, FALSE is asynchronous.
+ * MFSL_async_object_is_synchronous: Checks if a mfsl_object is synchronous.
  *
- * Returns TRUE if the object is synced, FALSE is asynchronous.
+ * Checks if a mfsl_object is synchronous. p_mfsl_object must be protected before this function is called.
  *
  * @param p_mfsl_object [IN] pointer to MFSL object to be tested
  *
- * @return  TRUE if the object is synced, FALSE is asynchronous.
+ * @return TRUE if synchronous, FALSE instead.
  *
  */
 int MFSL_async_object_is_synchronous(mfsl_object_t * p_mfsl_object)
@@ -330,12 +332,16 @@ int MFSL_async_object_is_synchronous(mfsl_object_t * p_mfsl_object)
     if(p_mfsl_object == NULL)
         return FALSE;
 
-    if(p_mfsl_object->p_last_op_desc == NULL)
-        return TRUE;
+    P(synclet_data[p_mfsl_object->last_synclet_index].last_op_time_mutex);
+    if(timercmp(&synclet_data[p_mfsl_object->last_synclet_index].last_op_time, &p_mfsl_object->last_op_time, <))
+    {
+        V(synclet_data[p_mfsl_object->last_synclet_index].last_op_time_mutex);
+        return FALSE;
+    }
+    V(synclet_data[p_mfsl_object->last_synclet_index].last_op_time_mutex);
 
-    /** @todo should we test if operation is out of asynchronous window? */
-
-    return FALSE;
+    /* If this point is reached, the object is synchronous */
+    return TRUE;
 } /* MFSL_async_object_is_synchronous */
 
 

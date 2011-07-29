@@ -92,9 +92,10 @@ typedef struct mfsl_context__
 
 typedef struct mfsl_object__
 {
-    fsal_handle_t                 handle;
-    struct mfsl_async_op_desc__ * p_last_op_desc;
-    struct timeval                last_op_time;
+    fsal_handle_t  handle;
+    /* asynchronism manageemnt */
+    struct timeval last_op_time;
+    int            last_synclet_index;
 } mfsl_object_t;
 
 typedef struct mfsl_file__
@@ -136,6 +137,9 @@ typedef struct mfsl_synclet_data__
     pthread_mutex_t          mutex_op_lru;          /* Mutex that owns the operations_lru */
     LRU_list_t             * failed_op_lru;         /* This list contains the operation that failed to be processed by the current synclet */
     pthread_mutex_t          mutex_failed_op_lru;   /* Mutex that owns the failed_operations_lru */
+    /* asynchronism management */
+    struct timeval           last_op_time;
+    pthread_mutex_t          last_op_time_mutex;
 } mfsl_synclet_data_t;
 
 typedef struct mfsl_filler_context__
@@ -329,7 +333,6 @@ typedef struct mfsl_async_op_desc__
     fsal_op_context_t      fsal_op_context;
     caddr_t                ptr_mfsl_context; /* pointer tothe mfsl_context, used in synclet */
     unsigned int           related_synclet_index;
-    mfsl_object_t        * concerned_objects[3];
 } mfsl_async_op_desc_t;
 
 /* functions */

@@ -179,16 +179,9 @@ fsal_status_t MFSL_setattrs(mfsl_object_t      * filehandle,        /* IN */
     p_async_op_desc->fsal_op_context  = *p_context;
     p_async_op_desc->ptr_mfsl_context = (caddr_t) p_mfsl_context;
 
-    p_async_op_desc->concerned_objects[0] = filehandle;
-    p_async_op_desc->concerned_objects[1] = NULL;
-    p_async_op_desc->concerned_objects[2] = NULL;
-
-    if(!filehandle->p_last_op_desc ||
-        timercmp(&filehandle->last_op_time, &p_async_op_desc->op_time, < ))
-    {
-        filehandle->p_last_op_desc = p_async_op_desc;
-        filehandle->last_op_time   = p_async_op_desc->op_time;
-    }
+    /* Manage asynchronism */
+    filehandle->last_op_time       = p_async_op_desc->op_time;
+    filehandle->last_synclet_index = p_async_op_desc->related_synclet_index;
 
 
     /* Post the asynchronous operation description
