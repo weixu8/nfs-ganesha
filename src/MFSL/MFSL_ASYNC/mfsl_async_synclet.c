@@ -309,16 +309,6 @@ void * mfsl_async_synclet_thread(void * arg)
                 /* Invalidate entry. */
                 if(LRU_invalidate(my_synclet_data->op_lru, current_lru_entry) != LRU_LIST_SUCCESS)
                     LogCrit(COMPONENT_MFSL, "Impossible to invalidate lru_entry in synclet_data %d.", my_synclet_data->index);
-
-                /* Get time to manage asynchronism */
-                P(synclet_data[my_synclet_data->index].last_op_time_mutex);
-                if(gettimeofday(&synclet_data[my_synclet_data->index].last_op_time, NULL) != 0)
-                {
-                     /* Could'not get time of day... */
-                     LogCrit(COMPONENT_MFSL, "Cannot get time of day...");
-                     exit(1);
-                }
-                V(synclet_data[my_synclet_data->index].last_op_time_mutex);
             }
         }
 
@@ -335,6 +325,16 @@ void * mfsl_async_synclet_thread(void * arg)
         }
 
         V(my_synclet_data->mutex_op_lru);
+
+        /* Get time to manage asynchronism */
+        P(synclet_data[my_synclet_data->index].last_op_time_mutex);
+        if(gettimeofday(&synclet_data[my_synclet_data->index].last_op_time, NULL) != 0)
+        {
+            /* Could'not get time of day... */
+            LogCrit(COMPONENT_MFSL, "Cannot get time of day...");
+            exit(1);
+        }
+        V(synclet_data[my_synclet_data->index].last_op_time_mutex);
     } /* end_of_mfsl */
 
     LogEvent(COMPONENT_MFSL, "Synclet %d Ends.", my_synclet_data->index);
