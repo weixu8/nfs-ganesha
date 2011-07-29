@@ -145,6 +145,9 @@ fsal_status_t MFSL_link(mfsl_object_t      * target_handle,  /* IN */
         MFSL_return(ERR_FSAL_SERVERFAULT, 0);
     }
 
+    /* Set memory */
+    memset((void *) p_async_op_desc, 0, sizeof(mfsl_async_op_desc_t));
+
     if(gettimeofday(&p_async_op_desc->op_time, NULL) != 0)
     {
         /* Could'not get time of day... Stopping, this may need a major failure */

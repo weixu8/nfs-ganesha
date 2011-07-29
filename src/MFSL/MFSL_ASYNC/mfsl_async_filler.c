@@ -366,8 +366,7 @@ fsal_status_t MFSL_async_filler_dispatch_objects()
             }
 
             FSAL_SET_COOKIE_BEGINNING(dir_fsal_cookie_beginning);
-            /** \todo ask for FSAL_ATTRS_MANDATORY?
-             **************************************/
+
             fsal_status = FSAL_readdir(&dir_dir_descriptor,
                                        dir_fsal_cookie_beginning,
                                        FSAL_ATTRS_POSIX,
@@ -411,6 +410,7 @@ fsal_status_t MFSL_async_filler_dispatch_objects()
                 /* Correctly fill attributes */
                 object_entry->object_attributes.supported_attributes = FSAL_ATTRS_POSIX;
                 object_entry->object_attributes.asked_attributes     = FSAL_ATTRS_POSIX;
+                object_entry->object_attributes.type                 = FSAL_TYPE_DIR;
 
                 /* LRU */
                 P(filler_data[i].precreated_object_pool.mutex_dirs_lru);
@@ -495,6 +495,7 @@ fsal_status_t MFSL_async_filler_dispatch_objects()
                 /* Correctly fill attributes */
                 object_entry->object_attributes.supported_attributes = FSAL_ATTRS_POSIX;
                 object_entry->object_attributes.asked_attributes     = FSAL_ATTRS_POSIX;
+                object_entry->object_attributes.type                 = FSAL_TYPE_FILE;
 
                 /* LRU */
                 P(filler_data[i].precreated_object_pool.mutex_files_lru);
@@ -639,6 +640,8 @@ int MFSL_async_filler_fill_directories(unsigned int index, unsigned int number, 
         LogDebug(COMPONENT_MFSL, "%s/%d/dirs/%s created.",
                  mfsl_param->pre_create_obj_dir,
                  index, filename_str);
+
+        object_entry->object_attributes.type = FSAL_TYPE_DIR;
 
         if(pp_object == NULL)
         {
@@ -788,6 +791,8 @@ int MFSL_async_filler_fill_files(unsigned int index, int number, mfsl_precreated
         LogDebug(COMPONENT_MFSL, "%s/%d/files/%s created.",
                  mfsl_param->pre_create_obj_dir,
                  index, filename_str);
+
+        object_entry->object_attributes.type = FSAL_TYPE_DIR;
 
         if(!object)
         {

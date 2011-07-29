@@ -48,6 +48,8 @@
 
 extern mfsl_filler_data_t * filler_data; /* Filler Data Array, from mfsl_async2_filler.c */
 
+extern fsal_staticfsinfo_t global_fs_info; /* From fsal_internal */
+
 /******************************************************
  *              Common Filesystem calls.
  ******************************************************/
@@ -83,7 +85,7 @@ fsal_status_t MFSL_async_mkdir(mfsl_async_op_desc_t * p_operation_description)
     /* Set correct attributes */
     fsal_status = FSAL_setattrs(&p_operation_description->op_args.mkdir.new_dir_handle,        /* IN */
                                 &p_operation_description->op_args.mkdir.context,               /* IN */
-                                &p_operation_description->op_guessed.mkdir.new_dir_attributes, /* IN */
+                                &p_operation_description->op_args.mkdir.new_dir_attributes, /* IN */
                                 &p_operation_description->op_res.mkdir.new_dir_attributes      /* IN/OUT */
                                );
     if(FSAL_IS_ERROR(fsal_status))
@@ -158,6 +160,9 @@ fsal_status_t MFSL_mkdir(mfsl_object_t      * parent_directory_handle, /* IN */
         MFSL_return(ERR_FSAL_SERVERFAULT, 0);
     }
 
+    /* Set memory */
+    memset((void *) p_async_op_desc, 0, sizeof(mfsl_async_op_desc_t));
+
     if(gettimeofday(&p_async_op_desc->op_time, NULL) != 0)
     {
         /* Could'not get time of day... Stopping, this may need a major failure */
@@ -200,6 +205,14 @@ fsal_status_t MFSL_mkdir(mfsl_object_t      * parent_directory_handle, /* IN */
            (void *) &precreated_object->object_attributes,
            sizeof(fsal_attrib_list_t));
 
+    memcpy((void *) &p_async_op_desc->op_res.mkdir.new_dir_attributes,
+           (void *) &precreated_object->object_attributes,
+           sizeof(fsal_attrib_list_t));
+
+    memcpy((void *) &p_async_op_desc->op_args.mkdir.new_dir_attributes,
+           (void *) &precreated_object->object_attributes,
+           sizeof(fsal_attrib_list_t));
+
     p_async_op_desc->op_guessed.mkdir.new_dir_attributes.ctime.seconds  = time(NULL);
     p_async_op_desc->op_guessed.mkdir.new_dir_attributes.ctime.nseconds = 0;
 
@@ -208,7 +221,7 @@ fsal_status_t MFSL_mkdir(mfsl_object_t      * parent_directory_handle, /* IN */
     p_async_op_desc->op_guessed.mkdir.new_dir_attributes.mtime.nseconds =
             p_async_op_desc->op_guessed.mkdir.new_dir_attributes.ctime.nseconds;
 
-    p_async_op_desc->op_guessed.mkdir.new_dir_attributes.mode  = accessmode;
+    p_async_op_desc->op_guessed.mkdir.new_dir_attributes.mode  = (accessmode & ~global_fs_info.umask);
     p_async_op_desc->op_guessed.mkdir.new_dir_attributes.owner = FSAL_OP_CONTEXT_TO_UID(p_context);
     p_async_op_desc->op_guessed.mkdir.new_dir_attributes.group = FSAL_OP_CONTEXT_TO_GID(p_context);
 
@@ -228,6 +241,25 @@ fsal_status_t MFSL_mkdir(mfsl_object_t      * parent_directory_handle, /* IN */
     p_async_op_desc->op_args.mkdir.new_parentdir_handle  = parent_directory_handle->handle;
     p_async_op_desc->op_args.mkdir.new_dirname           = *p_dirname;
     p_async_op_desc->op_args.mkdir.context               = *p_context;
+
+    p_async_op_desc->op_args.mkdir.new_dir_attributes       = p_async_op_desc->op_guessed.mkdir.new_dir_attributes;
+    p_async_op_desc->op_args.mkdir.new_dir_attributes.mode  = accessmode;
+    p_async_op_desc->op_args.mkdir.new_dir_attributes.owner = FSAL_OP_CONTEXT_TO_UID(p_context);
+    p_async_op_desc->op_args.mkdir.new_dir_attributes.owner = FSAL_OP_CONTEXT_TO_UID(p_context);
+
+    p_async_op_desc->op_args.mkdir.new_dir_attributes.asked_attributes |= FSAL_ATTRS_POSIX;
+    p_async_op_desc->op_args.mkdir.new_dir_attributes.ctime.seconds  =
+            p_async_op_desc->op_guessed.mkdir.new_dir_attributes.ctime.seconds;
+    p_async_op_desc->op_args.mkdir.new_dir_attributes.ctime.nseconds =
+            p_async_op_desc->op_guessed.mkdir.new_dir_attributes.ctime.nseconds;
+    p_async_op_desc->op_args.mkdir.new_dir_attributes.mtime.seconds  =
+            p_async_op_desc->op_guessed.mkdir.new_dir_attributes.ctime.seconds;
+    p_async_op_desc->op_args.mkdir.new_dir_attributes.mtime.nseconds =
+            p_async_op_desc->op_guessed.mkdir.new_dir_attributes.ctime.nseconds;
+    p_async_op_desc->op_args.mkdir.new_dir_attributes.atime.seconds  =
+            p_async_op_desc->op_guessed.mkdir.new_dir_attributes.ctime.seconds;
+    p_async_op_desc->op_args.mkdir.new_dir_attributes.atime.nseconds =
+            p_async_op_desc->op_guessed.mkdir.new_dir_attributes.ctime.nseconds;
 
     /** \todo what is that?
      * p_async_op_desc->op_mobject                             = object_handle;

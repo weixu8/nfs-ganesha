@@ -245,6 +245,7 @@ typedef struct mfsl_async_op_mkdir_args__
     fsal_name_t        new_dirname;
     fsal_handle_t      new_dir_handle;
     fsal_op_context_t  context;
+    fsal_attrib_list_t new_dir_attributes;
 } mfsl_async_op_mkdir_args_t;
 
 typedef struct mfsl_async_op_mkdir_res__
