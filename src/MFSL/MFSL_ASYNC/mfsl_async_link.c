@@ -72,6 +72,16 @@ fsal_status_t MFSL_async_link(mfsl_async_op_desc_t * p_operation_description)
     p_operation_description->op_res.link.linked_object_attributes =
         p_operation_description->op_args.link.linked_object_attributes;
 
+    if(FSAL_IS_ERROR(fsal_status))
+    {
+         LogCrit(COMPONENT_MFSL, "Could not link object to %s. %p. Status: (%d.%d).",
+                 p_operation_description->op_args.link.link_name.name,
+                 (caddr_t) p_operation_description,
+                 fsal_status.major, fsal_status.minor);
+        /* Don't do anything else. MFSL_async_process_async_op will handle it. */
+        return fsal_status;
+    }
+
     return fsal_status;
 }
 

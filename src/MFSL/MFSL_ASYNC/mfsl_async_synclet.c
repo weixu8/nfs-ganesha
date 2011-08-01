@@ -113,9 +113,10 @@ fsal_status_t MFSL_async_process_async_op(mfsl_async_op_desc_t * p_async_op_desc
         LRU_entry_t    * failed_op_entry; /* will contain a failed_op */
         LRU_status_t     lru_status;
 
-        LogMajor(COMPONENT_MFSL, "Impossible to process: op_type=%u %s : error (%u, %u)",
+        LogMajor(COMPONENT_MFSL, "Impossible to process: op_type=%u %s : error (%u, %u). %p",
                 p_async_op_desc->op_type, mfsl_async_op_name[p_async_op_desc->op_type],
-                fsal_status.major, fsal_status.minor);
+                fsal_status.major, fsal_status.minor,
+                (caddr_t) p_async_op_desc);
 
         /* Post this operation in a dedicated LRU, for debug. */
         P(synclet_data[p_async_op_desc->related_synclet_index].mutex_failed_op_lru);
@@ -304,7 +305,7 @@ void * mfsl_async_synclet_thread(void * arg)
                 fsal_status = MFSL_async_process_async_op(current_async_operation);
 
                 if(FSAL_IS_ERROR(fsal_status)) /* @todo: should never happen, unless we change the process function */
-                    LogCrit(COMPONENT_MFSL, "Impossible to perform asynchronous operation.");
+                    LogCrit(COMPONENT_MFSL, "Impossible to perform asynchronous operation. %p", (caddr_t) current_async_operation);
 
                 /* Invalidate entry. */
                 if(LRU_invalidate(my_synclet_data->op_lru, current_lru_entry) != LRU_LIST_SUCCESS)

@@ -78,8 +78,14 @@ fsal_status_t MFSL_async_mkdir(mfsl_async_op_desc_t * p_operation_description)
                              );
     if(FSAL_IS_ERROR(fsal_status))
     {
-        LogCrit(COMPONENT_MFSL, "Could not rename precreated dir to its final destination.");
+        LogCrit(COMPONENT_MFSL, "Could not rename precreated dir %s to its final destination %s. %p. Status: (%d.%d).",
+                 p_operation_description->op_args.mkdir.old_dirname.name,
+                 p_operation_description->op_args.mkdir.new_dirname.name,
+                 (caddr_t) p_operation_description,
+                 fsal_status.major, fsal_status.minor);
+
         /* Don't do anything else. MFSL_async_process_async_op will handle it. */
+        return fsal_status;
     }
 
     /* Set correct attributes */
@@ -90,11 +96,16 @@ fsal_status_t MFSL_async_mkdir(mfsl_async_op_desc_t * p_operation_description)
                                );
     if(FSAL_IS_ERROR(fsal_status))
     {
-         LogCrit(COMPONENT_MFSL, "Could not setattrs new dir.");
+         LogCrit(COMPONENT_MFSL, "Could not setattrs new dir %s. %p. Status: (%d.%d).",
+                 p_operation_description->op_args.mkdir.new_dirname.name,
+                 (caddr_t) p_operation_description,
+                 fsal_status.major, fsal_status.minor);
+
         /* Don't do anything else. MFSL_async_process_async_op will handle it. */
+        return fsal_status;
     }
 
-    MFSL_return(ERR_FSAL_NO_ERROR, 0);
+    return fsal_status;
 }
 
 /**

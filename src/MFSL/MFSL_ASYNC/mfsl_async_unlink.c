@@ -67,6 +67,15 @@ fsal_status_t MFSL_async_unlink(mfsl_async_op_desc_t * p_operation_description)
                               &p_operation_description->op_args.unlink.context,
                               &p_operation_description->op_args.unlink.parentdir_attributes);
 
+    if(FSAL_IS_ERROR(fsal_status))
+    {
+        LogCrit(COMPONENT_MFSL, "Could not unlink object %s. %p. Status: (%d.%d).",
+                p_operation_description->op_args.unlink.object_name.name,
+                (caddr_t) p_operation_description,
+                fsal_status.major, fsal_status.minor);
+        /* Don't do anything else. MFSL_async_process_async_op will handle it. */
+    }
+
     /* Don't forget to update the result */
     p_operation_description->op_res.unlink.parentdir_attributes =
         p_operation_description->op_args.unlink.parentdir_attributes;
