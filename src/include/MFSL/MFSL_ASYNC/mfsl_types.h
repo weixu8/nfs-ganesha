@@ -342,6 +342,7 @@ unsigned int MFSL_async_choose_synclet(mfsl_async_op_desc_t * candidate_async_op
 
 int MFSL_async_object_is_synchronous(mfsl_object_t * p_mfsl_object);
 
+#define MFSL_OBJECT_NO_LAST_SYNCLET -1
 
 /* Precreated files management
  *****************************/

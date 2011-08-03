@@ -329,7 +329,7 @@ fsal_status_t MFSL_rcp_by_fileid(mfsl_object_t * filehandle,    /* IN */
  */
 int MFSL_async_object_is_synchronous(mfsl_object_t * p_mfsl_object)
 {
-    if(p_mfsl_object == NULL)
+    if((p_mfsl_object == NULL) || (p_mfsl_object->last_synclet_index == MFSL_OBJECT_NO_LAST_SYNCLET))
         return FALSE;
 
     P(synclet_data[p_mfsl_object->last_synclet_index].last_op_time_mutex);
