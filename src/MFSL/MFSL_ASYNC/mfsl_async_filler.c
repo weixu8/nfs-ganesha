@@ -57,6 +57,10 @@ unsigned int    object_dir_inited = FALSE;
 pthread_barrier_t filler_barrier;
 pthread_once_t    filler_init_once = PTHREAD_ONCE_INIT;
 
+int             filler_inited = 0;
+pthread_cond_t  filler_is_inited;       /* Tell if filler is successfully inited */
+pthread_mutex_t mutex_filler_is_inited; /* Mutex associated with previous condition. */
+
 
 /**
  *
@@ -888,6 +892,15 @@ fsal_status_t MFSL_async_filler_init_objects()
     timersub(&after, &now, &dif);
     LogDebug(COMPONENT_MFSL, "Pools filled in %ld sec %ld usec.", dif.tv_sec, dif.tv_usec);
 
+    P(mutex_filler_is_inited);
+    filler_inited = 1;
+    if(pthread_cond_signal(&filler_is_inited) == -1)
+    {
+        LogCrit(COMPONENT_MFSL, "Impossible to pthread_cond_signal to MFSL_async_filler_init.");
+        exit(1);
+    }
+    V(mutex_filler_is_inited);
+
     MFSL_return(ERR_FSAL_NO_ERROR, 0);
 } /* MFSL_async_filler_init_objects */
 
@@ -1341,6 +1354,19 @@ fsal_status_t MFSL_async_filler_init(void * arg)
         exit(1);
     }
 
+    /* Initializes filler_is_inited */
+    if(pthread_cond_init(&filler_is_inited, NULL) != 0)
+    {
+        LogCrit(COMPONENT_MFSL, "Impossible to initialize filler_is_inited.");
+        exit(1);
+    }
+
+    if(pthread_mutex_init(&mutex_filler_is_inited, NULL) != 0)
+    {
+        LogCrit(COMPONENT_MFSL, "Impossible to initialize mutex_filler_is_inited.");
+        exit(1);
+    }
+
     /* Start fillers
      ***************/
     /** \todo change parameter name */
@@ -1356,6 +1382,11 @@ fsal_status_t MFSL_async_filler_init(void * arg)
                         (void *) &filler_data[i]))     < 0)
             MFSL_return(ERR_FSAL_SERVERFAULT, -rc);
     }
+
+    P(mutex_filler_is_inited);
+    while(filler_inited == 0)
+        pthread_cond_wait(&filler_is_inited, &mutex_filler_is_inited);
+    V(mutex_filler_is_inited);
 
     LogDebug(COMPONENT_MFSL, "All fillers start working.");
 

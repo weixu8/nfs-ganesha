@@ -57,6 +57,10 @@ pthread_mutex_t   dispatcher_lru_mutex;    /* Mutex associated with previously d
 struct timeval  last_async_window_check;       /* time of last window check */
 pthread_mutex_t last_async_window_check_mutex; /* mutex associated with previously declared timeval */
 
+int             dispatcher_inited = 0;
+pthread_cond_t  dispatcher_is_inited;       /* Tell if dispatcher is successfully inited */
+pthread_mutex_t mutex_dispatcher_is_inited; /* Mutex associated with previous condition. */
+
 extern mfsl_synclet_data_t * synclet_data; /* Synclet Data Array, from mfsl_async_synclet.c */
 
 /**
@@ -168,6 +172,15 @@ void * mfsl_async_dispatcher_thread(void * arg)
         LogCrit(COMPONENT_MFSL, "Impossible to initialize last_async_window_check_mutex.");
         exit(1);
     }
+
+    P(mutex_dispatcher_is_inited);
+    dispatcher_inited = 1;
+    if(pthread_cond_signal(&dispatcher_is_inited) == -1)
+    {
+        LogCrit(COMPONENT_MFSL, "Impossible to pthread_cond_signal to MFSL_async_dispatcher_init.");
+        exit(1);
+    }
+    V(mutex_dispatcher_is_inited);
 
     /*************************
      *         Work
@@ -289,11 +302,30 @@ fsal_status_t MFSL_async_dispatcher_init(void * arg)
     pthread_attr_setscope(&dispatcher_thread_attr, PTHREAD_SCOPE_SYSTEM);
     pthread_attr_setdetachstate(&dispatcher_thread_attr, PTHREAD_CREATE_JOINABLE);
 
+    /* Initializes dispatcher_is_inited */
+    if(pthread_cond_init(&dispatcher_is_inited, NULL) != 0)
+    {
+        LogCrit(COMPONENT_MFSL, "Impossible to initialize dispatcher_is_inited.");
+        exit(1);
+    }
+
+    if(pthread_mutex_init(&mutex_dispatcher_is_inited, NULL) != 0)
+    {
+        LogCrit(COMPONENT_MFSL, "Impossible to initialize mutex_dispatcher_is_inited.");
+        exit(1);
+    }
+
+    /* Start dispatcher */
     if((rc = pthread_create(&dispatcher_thread,
                             &dispatcher_thread_attr,
                             mfsl_async_dispatcher_thread,
                             (void *)NULL)   ) != 0)
         MFSL_return(ERR_FSAL_SERVERFAULT, -rc);
+
+    P(mutex_dispatcher_is_inited);
+    while(dispatcher_inited == 0)
+        pthread_cond_wait(&dispatcher_is_inited, &mutex_dispatcher_is_inited);
+    V(mutex_dispatcher_is_inited);
 
     MFSL_return(ERR_FSAL_NO_ERROR, 0);
 }

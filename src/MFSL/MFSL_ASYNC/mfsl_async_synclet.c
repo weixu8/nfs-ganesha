@@ -175,6 +175,30 @@ unsigned int MFSL_async_choose_synclet(mfsl_async_op_desc_t * candidate_async_op
 
 
 /**
+ * MFSL_async_synclet_all_inited: this function is used to send a signal to MFSL_async_synclet_init.
+ *
+ * This function is used to send a signal to MFSL_async_synclet_init. It is called once by synclets,
+ * we so ensure all synclets are inited.
+ *
+ * \return nothing
+ */
+void * MFSL_async_synclet_all_inited(void)
+{
+    P(mutex_synclet_is_inited);
+    synclet_inited = 1;
+    if(pthread_cond_signal(&synclet_is_inited) == -1)
+    {
+        LogCrit(COMPONENT_MFSL, "Impossible to pthread_cond_signal to MFSL_async_synclet_init.");
+        V(mutex_synclet_is_inited);
+        exit(1);
+    }
+    V(mutex_synclet_is_inited);
+
+    return NULL;
+}
+
+
+/**
  * mfsl_async_synclet_thread: thread used for asynchronous operation management.
  *
  * This thread is used for managing asynchronous operation management
@@ -273,6 +297,20 @@ void * mfsl_async_synclet_thread(void * arg)
          exit(1);
     }
     V(synclet_data[my_synclet_data->index].last_op_time_mutex);
+
+    /* Synchronize */
+    rc = pthread_barrier_wait(&synclet_barrier);
+    if(rc != 0 && rc != PTHREAD_BARRIER_SERIAL_THREAD)
+    {
+        LogCrit(COMPONENT_MFSL, "MFSL_synclets could not synchronize: %d.", rc);
+        exit(1);
+    }
+
+    if((rc = pthread_once(&synclet_init_once, (void *) MFSL_async_synclet_all_inited)) != 0)
+    {
+        LogCrit(COMPONENT_MFSL, "MFSL_synclets could not end initialisation.");
+        exit(1);
+    }
 
 
     /*************************
@@ -380,6 +418,27 @@ fsal_status_t MFSL_async_synclet_init(void * arg)
         exit(1);
     }
 
+    /* Initializes barrier */
+    if((rc = pthread_barrier_init(&synclet_barrier, NULL, mfsl_param->nb_synclet)) != 0)
+    {
+        LogCrit(COMPONENT_MFSL, "Impossible to create barrier to synchronize synclets: %d.", rc);
+        exit(1);
+    }
+
+    /* Initializes synclet_is_inited */
+    if(pthread_cond_init(&synclet_is_inited, NULL) != 0)
+    {
+        LogCrit(COMPONENT_MFSL, "Impossible to initialize synclet_is_inited.");
+        exit(1);
+    }
+
+    if(pthread_mutex_init(&mutex_synclet_is_inited, NULL) != 0)
+    {
+        LogCrit(COMPONENT_MFSL, "Impossible to initialize mutex_synclet_is_inited.");
+        exit(1);
+    }
+
+    /* Start synclets */
     for(i=0; i < mfsl_param->nb_synclet; i++)
     {
         LogDebug(COMPONENT_MFSL, "Creation of synclet number %d.", i);
@@ -392,6 +451,11 @@ fsal_status_t MFSL_async_synclet_init(void * arg)
                         (void *) &synclet_data[i]))     != 0)
             MFSL_return(ERR_FSAL_SERVERFAULT, -rc);
     }
+
+    P(mutex_synclet_is_inited);
+    while(synclet_inited == 0)
+        pthread_cond_wait(&synclet_is_inited, &mutex_synclet_is_inited);
+    V(mutex_synclet_is_inited);
 
     MFSL_return(ERR_FSAL_NO_ERROR, 0);
 }
