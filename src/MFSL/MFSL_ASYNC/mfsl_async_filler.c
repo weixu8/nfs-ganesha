@@ -359,8 +359,6 @@ fsal_status_t MFSL_async_filler_dispatch_objects()
     {
         /* precreated directories
          ************************/
-        while(eod == FALSE)
-        {
             if(FSAL_IS_ERROR(fsal_status = FSAL_opendir(&filler_data[i].precreated_object_pool.dirs_pool_handle,
                                                         &filler_data[i].precreated_object_pool.root_fsal_context,
                                                         &dir_dir_descriptor, NULL)))
@@ -371,6 +369,9 @@ fsal_status_t MFSL_async_filler_dispatch_objects()
 
             FSAL_SET_COOKIE_BEGINNING(dir_fsal_cookie_beginning);
 
+
+        while(eod == FALSE)
+        {
             fsal_status = FSAL_readdir(&dir_dir_descriptor,
                                        dir_fsal_cookie_beginning,
                                        FSAL_ATTRS_POSIX,
@@ -381,14 +382,6 @@ fsal_status_t MFSL_async_filler_dispatch_objects()
             {
                 LogMajor(COMPONENT_MFSL,
                          "Impossible to readdir precreated_directories directory on filler #%d.", i);
-
-                MFSL_return(fsal_status.major, fsal_status.minor);
-            }
-
-            fsal_status = FSAL_closedir(&dir_dir_descriptor);
-            if(FSAL_IS_ERROR(fsal_status))
-            {
-                LogMajor(COMPONENT_MFSL, "Impossible to close precreated_directories directory on filler #%d.", i);
 
                 MFSL_return(fsal_status.major, fsal_status.minor);
             }
@@ -437,14 +430,21 @@ fsal_status_t MFSL_async_filler_dispatch_objects()
                 LogDebug(COMPONENT_MFSL, "dir %s dispatched to filler #%d.", object_entry->filename.name, i);
             }/* for */
 
+            dir_fsal_cookie_beginning = dir_end_cookie;
         } /* while */
+
+            fsal_status = FSAL_closedir(&dir_dir_descriptor);
+            if(FSAL_IS_ERROR(fsal_status))
+            {
+                LogMajor(COMPONENT_MFSL, "Impossible to close precreated_directories directory on filler #%d.", i);
+
+                MFSL_return(fsal_status.major, fsal_status.minor);
+            }
 
         eod = FALSE;
 
         /* precreated files
          ******************/
-        while(eod == FALSE)
-        {
             if(FSAL_IS_ERROR(fsal_status = FSAL_opendir(&filler_data[i].precreated_object_pool.files_pool_handle,
                                                         &filler_data[i].precreated_object_pool.root_fsal_context,
                                                         &file_dir_descriptor, NULL)))
@@ -454,8 +454,9 @@ fsal_status_t MFSL_async_filler_dispatch_objects()
             }
 
             FSAL_SET_COOKIE_BEGINNING(file_fsal_cookie_beginning);
-            /** \todo ask for FSAL_ATTRS_MANDATORY?
-             **************************************/
+
+        while(eod == FALSE)
+        {
             fsal_status = FSAL_readdir(&file_dir_descriptor,
                                        file_fsal_cookie_beginning,
                                        FSAL_ATTRS_POSIX,
@@ -466,14 +467,6 @@ fsal_status_t MFSL_async_filler_dispatch_objects()
             {
                 LogMajor(COMPONENT_MFSL,
                          "Impossible to readdir precreated_files directory on filler #%d.", i);
-
-                MFSL_return(fsal_status.major, fsal_status.minor);
-            }
-
-            fsal_status = FSAL_closedir(&file_dir_descriptor);
-            if(FSAL_IS_ERROR(fsal_status))
-            {
-                LogMajor(COMPONENT_MFSL, "Impossible to close precreated_files directory on filler #%d.", i);
 
                 MFSL_return(fsal_status.major, fsal_status.minor);
             }
@@ -522,7 +515,16 @@ fsal_status_t MFSL_async_filler_dispatch_objects()
                 LogDebug(COMPONENT_MFSL, "file %s dispatched to filler #%d.", object_entry->filename.name, i);
             } /* for */
 
+            file_fsal_cookie_beginning = file_end_cookie;
         } /* while */
+
+            fsal_status = FSAL_closedir(&file_dir_descriptor);
+            if(FSAL_IS_ERROR(fsal_status))
+            {
+                LogMajor(COMPONENT_MFSL, "Impossible to close precreated_files directory on filler #%d.", i);
+
+                MFSL_return(fsal_status.major, fsal_status.minor);
+            }
 
     } /* for */
 
