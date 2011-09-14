@@ -50,6 +50,13 @@ extern unsigned int       end_of_mfsl; /* from mfsl_async_init.c */
 pthread_t           * synclet_thread;  /* Synclet Thread Array */
 mfsl_synclet_data_t * synclet_data;    /* Synclet Data Array */
 
+pthread_barrier_t synclet_barrier;
+pthread_once_t    synclet_init_once = PTHREAD_ONCE_INIT;
+
+int             synclet_inited = 0;
+pthread_cond_t  synclet_is_inited;       /* Tell if synclet is successfully inited */
+pthread_mutex_t mutex_synclet_is_inited; /* Mutex associated with previous condition. */
+
 extern struct timeval  last_async_window_check;       /* time of last window check, from dispatcher.c */
 extern pthread_mutex_t last_async_window_check_mutex; /* mutex associated with previously declared timeval, from dispatcher.c */
 
