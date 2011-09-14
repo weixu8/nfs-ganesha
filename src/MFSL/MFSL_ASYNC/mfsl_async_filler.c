@@ -374,7 +374,7 @@ fsal_status_t MFSL_async_filler_dispatch_objects()
         {
             fsal_status = FSAL_readdir(&dir_dir_descriptor,
                                        dir_fsal_cookie_beginning,
-                                       FSAL_ATTRS_POSIX,
+                                       (FSAL_ATTRS_POSIX | FSAL_ATTRS_MANDATORY),
                                        NB_DIRENT_CLEAN * sizeof(fsal_dirent_t),
                                        dir_dirent, &dir_end_cookie, &dir_nb_entries, &eod);
 
@@ -405,8 +405,8 @@ fsal_status_t MFSL_async_filler_dispatch_objects()
                 object_entry->object_attributes = dir_dirent[dir_nb_count].attributes;
 
                 /* Correctly fill attributes */
-                object_entry->object_attributes.supported_attributes = FSAL_ATTRS_POSIX;
-                object_entry->object_attributes.asked_attributes     = FSAL_ATTRS_POSIX;
+                /*object_entry->object_attributes.supported_attributes = FSAL_ATTRS_POSIX;
+                object_entry->object_attributes.asked_attributes     = FSAL_ATTRS_POSIX;*/
                 object_entry->object_attributes.type                 = FSAL_TYPE_DIR;
 
                 /* LRU */
@@ -459,7 +459,7 @@ fsal_status_t MFSL_async_filler_dispatch_objects()
         {
             fsal_status = FSAL_readdir(&file_dir_descriptor,
                                        file_fsal_cookie_beginning,
-                                       FSAL_ATTRS_POSIX,
+                                       (FSAL_ATTRS_POSIX | FSAL_ATTRS_MANDATORY),
                                        NB_DIRENT_CLEAN * sizeof(fsal_dirent_t),
                                        file_dirent, &file_end_cookie, &file_nb_entries, &eod);
 
@@ -490,8 +490,8 @@ fsal_status_t MFSL_async_filler_dispatch_objects()
                 object_entry->object_attributes = file_dirent[file_nb_count].attributes;
 
                 /* Correctly fill attributes */
-                object_entry->object_attributes.supported_attributes = FSAL_ATTRS_POSIX;
-                object_entry->object_attributes.asked_attributes     = FSAL_ATTRS_POSIX;
+/*                object_entry->object_attributes.supported_attributes = (FSAL_ATTRS_POSIX | FSAL_ATTRS_MANDATORY);
+                object_entry->object_attributes.asked_attributes     = (FSAL_ATTRS_POSIX | FSAL_ATTRS_MANDATORY);*/
                 object_entry->object_attributes.type                 = FSAL_TYPE_FILE;
 
                 /* LRU */
@@ -624,8 +624,8 @@ int MFSL_async_filler_fill_directories(unsigned int index, unsigned int number, 
         }
 
         /* Correctly fill attributes */
-        object_entry->object_attributes.supported_attributes = FSAL_ATTRS_POSIX;
-        object_entry->object_attributes.asked_attributes     = FSAL_ATTRS_POSIX;
+/*        object_entry->object_attributes.supported_attributes = (FSAL_ATTRS_POSIX | FSAL_ATTRS_MANDATORY);*/
+        object_entry->object_attributes.asked_attributes     = (FSAL_ATTRS_POSIX | FSAL_ATTRS_MANDATORY);
 
         /* Dir creation */
         fsal_status = FSAL_mkdir(&filler_data[index].precreated_object_pool.dirs_pool_handle,
@@ -778,6 +778,10 @@ int MFSL_async_filler_fill_files(unsigned int index, int number, mfsl_precreated
             exit(1);
         }
 
+        /* Correctly fill attributes */
+/*        object_entry->object_attributes.supported_attributes = (FSAL_ATTRS_POSIX | FSAL_ATTRS_MANDATORY);*/
+        object_entry->object_attributes.asked_attributes     = (FSAL_ATTRS_POSIX | FSAL_ATTRS_MANDATORY);
+
         /* Dir creation */
         fsal_status = FSAL_create(&filler_data[index].precreated_object_pool.files_pool_handle,
                                  &object_entry->filename,
@@ -899,6 +903,7 @@ fsal_status_t MFSL_async_filler_init_objects()
     if(pthread_cond_signal(&filler_is_inited) == -1)
     {
         LogCrit(COMPONENT_MFSL, "Impossible to pthread_cond_signal to MFSL_async_filler_init.");
+        V(mutex_filler_is_inited);
         exit(1);
     }
     V(mutex_filler_is_inited);
