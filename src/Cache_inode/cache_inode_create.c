@@ -204,8 +204,10 @@ cache_inode_create(cache_entry_t * pentry_parent,
         {
         case REGULAR_FILE:
 #ifdef _USE_MFSL
-            parent_attributes.asked_attributes = FSAL_ATTRS_POSIX;
-            object_attributes.asked_attributes = FSAL_ATTRS_POSIX;
+#ifdef _USE_MFSL_ASYNC
+            parent_attributes.asked_attributes = (FSAL_ATTRS_POSIX | FSAL_ATTRS_MANDATORY);
+/*            object_attributes.asked_attributes = FSAL_ATTRS_POSIX;*/
+#endif /* _USE_MFSL_ASYNC */
             cache_inode_get_attributes(pentry_parent, &parent_attributes);
             fsal_status = MFSL_create(&pentry_parent->mobject,
                                       pname, pcontext,
@@ -226,8 +228,10 @@ cache_inode_create(cache_entry_t * pentry_parent,
 
         case DIR_BEGINNING:
 #ifdef _USE_MFSL
-            parent_attributes.asked_attributes = FSAL_ATTRS_POSIX;
-            object_attributes.asked_attributes = FSAL_ATTRS_POSIX;
+#ifdef _USE_MFSL_ASYNC
+            parent_attributes.asked_attributes = (FSAL_ATTRS_POSIX | FSAL_ATTRS_MANDATORY);
+            object_attributes.asked_attributes = (FSAL_ATTRS_POSIX | FSAL_ATTRS_MANDATORY);
+#endif /* _USE_MFSL_ASYNC */
             cache_inode_get_attributes(pentry_parent, &parent_attributes);
             fsal_status = MFSL_mkdir(&pentry_parent->mobject,
                                      pname, pcontext,
@@ -243,8 +247,10 @@ cache_inode_create(cache_entry_t * pentry_parent,
 
         case SYMBOLIC_LINK:
 #ifdef _USE_MFSL
-            parent_attributes.asked_attributes = FSAL_ATTRS_POSIX;
-            object_attributes.asked_attributes = FSAL_ATTRS_POSIX;
+#ifdef _USE_MFSL_ASYNC
+            parent_attributes.asked_attributes = (FSAL_ATTRS_POSIX | FSAL_ATTRS_MANDATORY);
+            object_attributes.asked_attributes = (FSAL_ATTRS_POSIX | FSAL_ATTRS_MANDATORY);
+#endif /* _USE_MFSL_ASYNC */
             cache_inode_get_attributes(pentry_parent, &parent_attributes);
             fsal_status = MFSL_symlink(&pentry_parent->mobject,
                                        pname, &pcreate_arg->link_content,
