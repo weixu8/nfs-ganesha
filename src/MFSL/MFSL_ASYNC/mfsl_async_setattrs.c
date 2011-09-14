@@ -159,9 +159,11 @@ fsal_status_t MFSL_setattrs(mfsl_object_t      * filehandle,        /* IN */
 
     /* Guess attributes
      ******************/
-    memcpy((void *) &p_async_op_desc->op_guessed.setattrs.object_attributes,
-           (void *) attrib_set,
+/*    memcpy((void *) &p_async_op_desc->op_guessed.setattrs.object_attributes,
+           (void *) object_attributes,
            sizeof(fsal_attrib_list_t));
+*/
+    p_async_op_desc->op_guessed.setattrs.object_attributes.asked_attributes = object_attributes.asked_attributes;
 
     fsal_status = FSAL_merge_attrs(&p_async_op_desc->op_guessed.setattrs.object_attributes,
                                    attrib_set,
