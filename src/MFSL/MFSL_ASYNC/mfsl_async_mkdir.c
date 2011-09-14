@@ -91,7 +91,7 @@ fsal_status_t MFSL_async_mkdir(mfsl_async_op_desc_t * p_operation_description)
     /* Set correct attributes */
     fsal_status = FSAL_setattrs(&p_operation_description->op_args.mkdir.new_dir_handle,        /* IN */
                                 &p_operation_description->op_args.mkdir.context,               /* IN */
-                                &p_operation_description->op_args.mkdir.new_dir_attributes, /* IN */
+                                &p_operation_description->op_args.mkdir.attrib_set,            /* IN */
                                 &p_operation_description->op_res.mkdir.new_dir_attributes      /* IN/OUT */
                                );
     if(FSAL_IS_ERROR(fsal_status))
@@ -100,7 +100,6 @@ fsal_status_t MFSL_async_mkdir(mfsl_async_op_desc_t * p_operation_description)
                  p_operation_description->op_args.mkdir.new_dirname.name,
                  (caddr_t) p_operation_description,
                  fsal_status.major, fsal_status.minor);
-
         /* Don't do anything else. MFSL_async_process_async_op will handle it. */
         return fsal_status;
     }
@@ -138,6 +137,8 @@ fsal_status_t MFSL_mkdir(mfsl_object_t      * parent_directory_handle, /* IN */
     mfsl_async_op_desc_t     * p_async_op_desc = NULL; /* asynchronous operation */
     mfsl_precreated_object_t * precreated_object;      /* Precreated directory we get */
     int                        chosen_synclet;
+
+    fsal_attrib_mask_t         unsupp_attr;
 
 
     /* Sanity checks
@@ -203,6 +204,14 @@ fsal_status_t MFSL_mkdir(mfsl_object_t      * parent_directory_handle, /* IN */
     p_async_op_desc->op_args.mkdir.new_dir_handle    = precreated_object->mobject.handle;
     p_async_op_desc->op_res.mkdir.new_dir_handle     = precreated_object->mobject.handle;
 
+
+    unsupp_attr = (object_attributes->asked_attributes) & (~precreated_object->object_attributes.asked_attributes);
+    if(unsupp_attr)
+    {
+        LogMajor(COMPONENT_MFSL, "Unsupported attributes asked!");
+        MFSL_return(ERR_FSAL_ATTRNOTSUPP, 0);
+    }
+
     /* attributes */
     memcpy((void *) &p_async_op_desc->op_res.mkdir.new_parentdir_attributes,
            (void *) parent_attributes,
@@ -216,6 +225,7 @@ fsal_status_t MFSL_mkdir(mfsl_object_t      * parent_directory_handle, /* IN */
            (void *) &precreated_object->object_attributes,
            sizeof(fsal_attrib_list_t));
 
+/*
     memcpy((void *) &p_async_op_desc->op_res.mkdir.new_dir_attributes,
            (void *) &precreated_object->object_attributes,
            sizeof(fsal_attrib_list_t));
@@ -223,22 +233,65 @@ fsal_status_t MFSL_mkdir(mfsl_object_t      * parent_directory_handle, /* IN */
     memcpy((void *) &p_async_op_desc->op_args.mkdir.new_dir_attributes,
            (void *) &precreated_object->object_attributes,
            sizeof(fsal_attrib_list_t));
+*/
+
+    p_async_op_desc->op_guessed.mkdir.new_dir_attributes.asked_attributes = object_attributes->asked_attributes;
 
     p_async_op_desc->op_guessed.mkdir.new_dir_attributes.ctime.seconds  = time(NULL);
     p_async_op_desc->op_guessed.mkdir.new_dir_attributes.ctime.nseconds = 0;
 
-    p_async_op_desc->op_guessed.mkdir.new_dir_attributes.mtime.seconds  =
-            p_async_op_desc->op_guessed.mkdir.new_dir_attributes.ctime.seconds;
-    p_async_op_desc->op_guessed.mkdir.new_dir_attributes.mtime.nseconds =
-            p_async_op_desc->op_guessed.mkdir.new_dir_attributes.ctime.nseconds;
+    if(FSAL_TEST_MASK(object_attributes->asked_attributes, FSAL_ATTR_MTIME))
+    {
+        LogFullDebug(COMPONENT_MFSL, "FSAL_ATTR_MTIME");
+        p_async_op_desc->op_guessed.mkdir.new_dir_attributes.mtime.seconds  =
+                p_async_op_desc->op_guessed.mkdir.new_dir_attributes.ctime.seconds;
+        p_async_op_desc->op_guessed.mkdir.new_dir_attributes.mtime.nseconds =
+                p_async_op_desc->op_guessed.mkdir.new_dir_attributes.ctime.nseconds;
+    }
 
-    p_async_op_desc->op_guessed.mkdir.new_dir_attributes.mode  = (accessmode & ~global_fs_info.umask);
-    p_async_op_desc->op_guessed.mkdir.new_dir_attributes.owner = FSAL_OP_CONTEXT_TO_UID(p_context);
-    p_async_op_desc->op_guessed.mkdir.new_dir_attributes.group = FSAL_OP_CONTEXT_TO_GID(p_context);
+    if(FSAL_TEST_MASK(object_attributes->asked_attributes, FSAL_ATTR_ATIME))
+    {
+        LogFullDebug(COMPONENT_MFSL, "FSAL_ATTR_ATIME");
+        p_async_op_desc->op_guessed.mkdir.new_dir_attributes.atime.seconds  =
+                p_async_op_desc->op_guessed.mkdir.new_dir_attributes.ctime.seconds;
+        p_async_op_desc->op_guessed.mkdir.new_dir_attributes.atime.nseconds =
+                p_async_op_desc->op_guessed.mkdir.new_dir_attributes.ctime.nseconds;
+    }
+
+    if(FSAL_TEST_MASK(object_attributes->asked_attributes, FSAL_ATTR_MODE))
+    {
+        LogFullDebug(COMPONENT_MFSL, "FSAL_ATTR_MODE");
+        p_async_op_desc->op_guessed.mkdir.new_dir_attributes.mode  = (accessmode & ~global_fs_info.umask);
+    }
+
+    if(FSAL_TEST_MASK(object_attributes->asked_attributes, FSAL_ATTR_OWNER))
+    {
+        LogFullDebug(COMPONENT_MFSL, "FSAL_ATTR_OWNER");
+        p_async_op_desc->op_guessed.mkdir.new_dir_attributes.owner = FSAL_OP_CONTEXT_TO_UID(p_context);
+    }
+
+    if(FSAL_TEST_MASK(object_attributes->asked_attributes, FSAL_ATTR_GROUP))
+    {
+        LogFullDebug(COMPONENT_MFSL, "FSAL_ATTR_GROUP");
+        p_async_op_desc->op_guessed.mkdir.new_dir_attributes.group = FSAL_OP_CONTEXT_TO_GID(p_context);
+    }
+
+    if(FSAL_TEST_MASK(object_attributes->asked_attributes, FSAL_ATTR_SIZE))
+    {
+        LogFullDebug(COMPONENT_MFSL, "FSAL_ATTR_SIZE");
+        p_async_op_desc->op_guessed.mkdir.new_dir_attributes.filesize = precreated_object->object_attributes.filesize;
+    }
+
+    if(FSAL_TEST_MASK(object_attributes->asked_attributes, FSAL_ATTR_SPACEUSED))
+    {
+        LogFullDebug(COMPONENT_MFSL, "FSAL_ATTR_SPACEUSED");
+        p_async_op_desc->op_guessed.mkdir.new_dir_attributes.spaceused = precreated_object->object_attributes.spaceused;
+    }
 
     p_async_op_desc->op_guessed.mkdir.new_dir_attributes.type  = FSAL_TYPE_DIR;
 
-    p_async_op_desc->op_guessed.mkdir.new_parentdir_attributes.filesize += 1;
+/*    p_async_op_desc->op_guessed.mkdir.new_parentdir_attributes.filesize += 1;*/
+
     p_async_op_desc->op_guessed.mkdir.new_parentdir_attributes.numlinks += 1;
 
 
@@ -252,7 +305,12 @@ fsal_status_t MFSL_mkdir(mfsl_object_t      * parent_directory_handle, /* IN */
     p_async_op_desc->op_args.mkdir.new_parentdir_handle  = parent_directory_handle->handle;
     p_async_op_desc->op_args.mkdir.new_dirname           = *p_dirname;
     p_async_op_desc->op_args.mkdir.context               = *p_context;
+    p_async_op_desc->op_args.mkdir.attrib_set.asked_attributes = object_attributes->asked_attributes;
+    p_async_op_desc->op_args.mkdir.attrib_set.owner = p_async_op_desc->op_guessed.mkdir.new_dir_attributes.owner;
+    p_async_op_desc->op_args.mkdir.attrib_set.group = p_async_op_desc->op_guessed.mkdir.new_dir_attributes.group;
+    p_async_op_desc->op_args.mkdir.attrib_set.mode = p_async_op_desc->op_guessed.mkdir.new_dir_attributes.mode;
 
+/*
     p_async_op_desc->op_args.mkdir.new_dir_attributes       = p_async_op_desc->op_guessed.mkdir.new_dir_attributes;
     p_async_op_desc->op_args.mkdir.new_dir_attributes.mode  = accessmode;
     p_async_op_desc->op_args.mkdir.new_dir_attributes.owner = FSAL_OP_CONTEXT_TO_UID(p_context);
@@ -271,7 +329,7 @@ fsal_status_t MFSL_mkdir(mfsl_object_t      * parent_directory_handle, /* IN */
             p_async_op_desc->op_guessed.mkdir.new_dir_attributes.ctime.seconds;
     p_async_op_desc->op_args.mkdir.new_dir_attributes.atime.nseconds =
             p_async_op_desc->op_guessed.mkdir.new_dir_attributes.ctime.nseconds;
-
+*/
     /** \todo what is that?
      * p_async_op_desc->op_mobject                             = object_handle;
      ****/

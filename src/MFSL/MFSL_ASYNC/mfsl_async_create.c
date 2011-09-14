@@ -89,7 +89,7 @@ fsal_status_t MFSL_async_create(mfsl_async_op_desc_t * p_operation_description)
     /* Set correct attributes */
     fsal_status = FSAL_setattrs(&p_operation_description->op_args.create.new_file_handle,        /* IN */
                                 &p_operation_description->op_args.create.context,                /* IN */
-                                &p_operation_description->op_guessed.create.new_file_attributes, /* IN */
+                                &p_operation_description->op_args.create.attrib_set,             /* IN */
                                 &p_operation_description->op_res.create.new_file_attributes      /* IN/OUT */
                                );
     if(FSAL_IS_ERROR(fsal_status))
@@ -135,6 +135,8 @@ fsal_status_t MFSL_create(mfsl_object_t      * parent_directory_handle, /* IN */
     mfsl_async_op_desc_t     * p_async_op_desc = NULL; /* asynchronous operation */
     mfsl_precreated_object_t * precreated_object;      /* Precreated file we get */
     int                        chosen_synclet;
+
+    fsal_attrib_mask_t         unsupp_attr;
 
 
     /* Sanity checks
@@ -200,6 +202,14 @@ fsal_status_t MFSL_create(mfsl_object_t      * parent_directory_handle, /* IN */
     p_async_op_desc->op_args.create.new_file_handle    = precreated_object->mobject.handle;
     p_async_op_desc->op_res.create.new_file_handle     = precreated_object->mobject.handle;
 
+
+    unsupp_attr = (object_attributes->asked_attributes) & (~precreated_object->object_attributes.asked_attributes);
+    if(unsupp_attr)
+    {
+        LogMajor(COMPONENT_MFSL, "Unsupported attributes asked!");
+        MFSL_return(ERR_FSAL_ATTRNOTSUPP, 0);
+    }
+
     /* attributes */
     memcpy((void *) &p_async_op_desc->op_res.create.new_parentdir_attributes,
            (void *) parent_attributes,
@@ -213,21 +223,63 @@ fsal_status_t MFSL_create(mfsl_object_t      * parent_directory_handle, /* IN */
            (void *) &precreated_object->object_attributes,
            sizeof(fsal_attrib_list_t));
 
+
+    p_async_op_desc->op_guessed.create.new_file_attributes.asked_attributes = object_attributes->asked_attributes;
+
     p_async_op_desc->op_guessed.create.new_file_attributes.ctime.seconds  = time(NULL);
     p_async_op_desc->op_guessed.create.new_file_attributes.ctime.nseconds = 0;
 
-    p_async_op_desc->op_guessed.create.new_file_attributes.mtime.seconds  =
-            p_async_op_desc->op_guessed.create.new_file_attributes.ctime.seconds;
-    p_async_op_desc->op_guessed.create.new_file_attributes.mtime.nseconds =
-            p_async_op_desc->op_guessed.create.new_file_attributes.ctime.nseconds;
+    if(FSAL_TEST_MASK(object_attributes->asked_attributes, FSAL_ATTR_MTIME))
+    {
+        LogFullDebug(COMPONENT_MFSL, "FSAL_ATTR_MTIME");
+        p_async_op_desc->op_guessed.create.new_file_attributes.mtime.seconds  =
+                p_async_op_desc->op_guessed.create.new_file_attributes.ctime.seconds;
+        p_async_op_desc->op_guessed.create.new_file_attributes.mtime.nseconds =
+                p_async_op_desc->op_guessed.create.new_file_attributes.ctime.nseconds;
+    }
 
-    p_async_op_desc->op_guessed.create.new_file_attributes.mode  = accessmode;
-    p_async_op_desc->op_guessed.create.new_file_attributes.owner = FSAL_OP_CONTEXT_TO_UID(p_context);
-    p_async_op_desc->op_guessed.create.new_file_attributes.group = FSAL_OP_CONTEXT_TO_GID(p_context);
+    if(FSAL_TEST_MASK(object_attributes->asked_attributes, FSAL_ATTR_ATIME))
+    {
+        LogFullDebug(COMPONENT_MFSL, "FSAL_ATTR_ATIME");
+        p_async_op_desc->op_guessed.create.new_file_attributes.atime.seconds  =
+                p_async_op_desc->op_guessed.create.new_file_attributes.ctime.seconds;
+        p_async_op_desc->op_guessed.create.new_file_attributes.atime.nseconds =
+                p_async_op_desc->op_guessed.create.new_file_attributes.ctime.nseconds;
+    }
+
+    if(FSAL_TEST_MASK(object_attributes->asked_attributes, FSAL_ATTR_MODE))
+    {
+        LogFullDebug(COMPONENT_MFSL, "FSAL_ATTR_MODE");
+        p_async_op_desc->op_guessed.create.new_file_attributes.mode  = accessmode;
+    }
+
+    if(FSAL_TEST_MASK(object_attributes->asked_attributes, FSAL_ATTR_OWNER))
+    {
+        LogFullDebug(COMPONENT_MFSL, "FSAL_ATTR_OWNER");
+        p_async_op_desc->op_guessed.create.new_file_attributes.owner = FSAL_OP_CONTEXT_TO_UID(p_context);
+    }
+
+    if(FSAL_TEST_MASK(object_attributes->asked_attributes, FSAL_ATTR_GROUP))
+    {
+        LogFullDebug(COMPONENT_MFSL, "FSAL_ATTR_GROUP");
+        p_async_op_desc->op_guessed.create.new_file_attributes.group = FSAL_OP_CONTEXT_TO_GID(p_context);
+    }
+
+    if(FSAL_TEST_MASK(object_attributes->asked_attributes, FSAL_ATTR_SIZE))
+    {
+        LogFullDebug(COMPONENT_MFSL, "FSAL_ATTR_SIZE");
+        p_async_op_desc->op_guessed.create.new_file_attributes.filesize = precreated_object->object_attributes.filesize;
+    }
+
+    if(FSAL_TEST_MASK(object_attributes->asked_attributes, FSAL_ATTR_SPACEUSED))
+    {
+        LogFullDebug(COMPONENT_MFSL, "FSAL_ATTR_SPACEUSED");
+        p_async_op_desc->op_guessed.create.new_file_attributes.spaceused = precreated_object->object_attributes.spaceused;
+    }
 
     p_async_op_desc->op_guessed.create.new_file_attributes.type  = FSAL_TYPE_FILE;
 
-    p_async_op_desc->op_guessed.create.new_parentdir_attributes.filesize += 1;
+/*    p_async_op_desc->op_guessed.create.new_parentdir_attributes.filesize += 1;*/
 
 
     /* Populate asynchronous operation description
@@ -240,6 +292,11 @@ fsal_status_t MFSL_create(mfsl_object_t      * parent_directory_handle, /* IN */
     p_async_op_desc->op_args.create.new_parentdir_handle = parent_directory_handle->handle;
     p_async_op_desc->op_args.create.new_filename         = *p_filename;
     p_async_op_desc->op_args.create.context              = *p_context;
+
+    p_async_op_desc->op_args.create.attrib_set.asked_attributes = object_attributes->asked_attributes;
+    p_async_op_desc->op_args.create.attrib_set.owner = p_async_op_desc->op_guessed.create.new_file_attributes.owner;
+    p_async_op_desc->op_args.create.attrib_set.group = p_async_op_desc->op_guessed.create.new_file_attributes.group;
+    p_async_op_desc->op_args.create.attrib_set.mode = p_async_op_desc->op_guessed.create.new_file_attributes.mode;
 
     /** \todo what is that?
      * p_async_op_desc->op_mobject                             = object_handle;
@@ -266,7 +323,10 @@ fsal_status_t MFSL_create(mfsl_object_t      * parent_directory_handle, /* IN */
     fsal_status = MFSL_async_post(p_async_op_desc);
 
     if(FSAL_IS_ERROR(fsal_status))
+    {
+        LogCrit(COMPONENT_MFSL, "Impossible to post the operation.");
         return fsal_status;
+    }
 
     /* Return attributes and status
      ******************************/
