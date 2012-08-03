@@ -5,7 +5,6 @@
 /**
  *
  * \file    fsal_convert.c
- * \author  $Author: leibovic $
  * \date    $Date: 2006/01/17 15:53:39 $
  * \version $Revision: 1.31 $
  * \brief   VFS-FSAL type translation functions.
@@ -163,6 +162,9 @@ int posix2fsal_error(int posix_errorcode)
 
     case EINTR:
       return ERR_FSAL_INTERRUPT;
+
+    case EROFS:
+       return ERR_FSAL_ROFS ;
 
     default:
 
