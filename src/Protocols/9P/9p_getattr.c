@@ -78,7 +78,7 @@ int _9p_getattr( _9p_request_data_t * preq9p,
   u64 * nlink        = NULL ;
   u64 * rdev         = NULL ;
   u64 * size         = NULL ;
-  u64 *blksize       = NULL ; 
+  u64 * blksize      = NULL ; 
   u64 * blocks       = NULL ; 
   u64 * atime_sec    = NULL ;
   u64 * atime_nsec   = NULL ;
