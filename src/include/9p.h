@@ -68,6 +68,7 @@ typedef uint64_t u64;
 #define _9P_MAXDIRCOUNT 2000 /* Must be bigger than _9P_SEND_BUFFER_SIZE / 40 */
 #define _9P_LOCK_CLIENT_LEN 64
 #define CONF_LABEL_9P "_9P"
+#define _9P_PRIME 17 
 
 #define _9P_MSG_SIZE 70000 
 #define _9P_HDR_SIZE  4
@@ -294,8 +295,9 @@ typedef struct _9p_qid {
 
 typedef struct _9p_param__
 {
-  unsigned short _9p_tcp_port ;
-  unsigned short _9p_rdma_port ;
+  unsigned short   _9p_tcp_port ;
+  unsigned short   _9p_rdma_port ;
+  hash_parameter_t _9p_hash_param ;
 } _9p_parameter_t ;
 
 typedef struct _9p_fid__
@@ -359,6 +361,8 @@ typedef struct _9p_conn__
 #endif 
    } trans_data ;
   _9p_trans_type_t trans_type ;
+  uint32_t        peer_addr ;
+  uint16_t        peer_port ;
   uint32_t        refcount;
   struct timeval  birth;  /* This is useful if same sockfd is reused on socket's close/open  */
   _9p_fid_t       fids[_9P_FID_PER_CONN] ;
@@ -371,6 +375,13 @@ typedef struct _9p_request_data__
   _9p_conn_t  *  pconn ;
   _9p_flush_hook_t flush_hook;
 } _9p_request_data_t ;
+
+typedef struct _9p_hash_key__
+{
+  uint32_t peer_addr ;
+  uint32_t peer_port ; /* 32 bits instead of 16 for alignment's reasons */
+  uint32_t fid ;
+} _9p_hash_key_t ;
 
 
 typedef int (*_9p_function_t) (_9p_request_data_t * preq9p, 
@@ -554,6 +565,14 @@ void _9p_FlushFlushHook(_9p_conn_t *conn, int tag, unsigned long sequence);
 int _9p_LockAndTestFlushHook(_9p_request_data_t *req);
 void _9p_ReleaseFlushHook(_9p_request_data_t *req);
 void _9p_DiscardFlushHook(_9p_request_data_t *req);
+
+/* 9p hash functions */
+int _9p_hash_fid_init( _9p_parameter_t param) ;
+uint32_t _9p_hash_func(hash_parameter_t * p_hparam, hash_buffer_t * buffclef) ;
+uint64_t _9p_hash_rbt(hash_parameter_t * p_hparam, hash_buffer_t * buffclef) ;
+int _9p_display_hash_val(hash_buffer_t * pbuff, char *str) ;
+int _9p_display_hash_key(hash_buffer_t * pbuff, char *str) ;
+int _9p_compare_hash_key(hash_buffer_t * buff1, hash_buffer_t * buff2) ;
 
 /* Protocol functions */
 int _9p_not_2000L( _9p_request_data_t * preq9p, 

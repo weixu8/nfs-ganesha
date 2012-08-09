@@ -241,7 +241,6 @@ void * _9p_socket_thread( void * Arg )
   }
   atomic_store_uint32_t(&_9p_conn.refcount, 0);
 
-
   if( gettimeofday( &_9p_conn.birth, NULL ) == -1 )
    LogFatal( COMPONENT_9P, "Cannot get connection's time of birth" ) ;
 
@@ -253,15 +252,20 @@ void * _9p_socket_thread( void * Arg )
    }
   else
    {
-     snprintf(strcaller, MAXNAMLEN, "0x%x=%d.%d.%d.%d",
+     snprintf(strcaller, MAXNAMLEN, "0x%x=%d.%d.%d.%d:%d",
               ntohl(addrpeer.sin_addr.s_addr),
              (ntohl(addrpeer.sin_addr.s_addr) & 0xFF000000) >> 24,
              (ntohl(addrpeer.sin_addr.s_addr) & 0x00FF0000) >> 16,
              (ntohl(addrpeer.sin_addr.s_addr) & 0x0000FF00) >> 8,
-             (ntohl(addrpeer.sin_addr.s_addr) & 0x000000FF));
+             (ntohl(addrpeer.sin_addr.s_addr) & 0x000000FF),
+              ntohs(addrpeer.sin_port) );
 
      LogEvent( COMPONENT_9P, "9p socket #%ld is connected to %s", tcp_sock, strcaller ) ; 
    }
+
+  /* Keep info on peer in pconn */
+  _9p_conn.peer_addr = ntohl( addrpeer.sin_addr.s_addr) ;
+  _9p_conn.peer_port = ntohs( addrpeer.sin_port ) ;
 
   /* Set up the structure used by poll */
   memset( (char *)fds, 0, sizeof( struct pollfd ) ) ;

@@ -296,6 +296,17 @@ void nfs_set_param_default()
 #endif
 #ifdef _USE_9P
   nfs_param._9p_param._9p_tcp_port = _9P_TCP_PORT ;
+  nfs_param._9p_param._9p_hash_param.index_size = _9P_PRIME ;
+  nfs_param._9p_param._9p_hash_param.alphabet_length = 10 ;
+  nfs_param._9p_param._9p_hash_param.hash_func_key = _9p_hash_func ;
+  nfs_param._9p_param._9p_hash_param.hash_func_rbt = _9p_hash_rbt ;
+  nfs_param._9p_param._9p_hash_param.hash_func_both =  NULL ;
+  nfs_param._9p_param._9p_hash_param.compare_key = _9p_compare_hash_key ;
+  nfs_param._9p_param._9p_hash_param.key_to_str = _9p_display_hash_key ;
+  nfs_param._9p_param._9p_hash_param.val_to_str = _9p_display_hash_val ;
+  nfs_param._9p_param._9p_hash_param.ht_name = "9P FIDs" ;
+  nfs_param._9p_param._9p_hash_param.flags = HT_FLAG_NONE ;
+  nfs_param._9p_param._9p_hash_param.ht_log_component = COMPONENT_9P ;
 #endif
 #ifdef _USE_9P_RDMA
   nfs_param._9p_param._9p_rdma_port = _9P_RDMA_PORT ;
@@ -1823,6 +1834,16 @@ static void nfs_Init(const nfs_start_info_t * p_start_info)
 #endif
 
 #ifdef _USE_9P
+  /* Init 9P has for fid */
+  LogDebug(COMPONENT_INIT, "Now building 9P FID cache");
+  if(_9p_hash_fid_init( nfs_param._9p_param) != 0)
+    {
+      LogFatal(COMPONENT_INIT,
+               "Error while initializing 9P FID cache");
+    }
+  LogInfo(COMPONENT_INIT,
+          "9P FID cache successfully initialized");
+
   /* Init the 9P lock owner cache */
   LogDebug(COMPONENT_INIT, "Now building 9P Owner cache");
   if(Init_9p_hash() != 0)
