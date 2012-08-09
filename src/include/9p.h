@@ -567,12 +567,16 @@ void _9p_ReleaseFlushHook(_9p_request_data_t *req);
 void _9p_DiscardFlushHook(_9p_request_data_t *req);
 
 /* 9p hash functions */
-int _9p_hash_fid_init( _9p_parameter_t param) ;
 uint32_t _9p_hash_func(hash_parameter_t * p_hparam, hash_buffer_t * buffclef) ;
 uint64_t _9p_hash_rbt(hash_parameter_t * p_hparam, hash_buffer_t * buffclef) ;
 int _9p_display_hash_val(hash_buffer_t * pbuff, char *str) ;
 int _9p_display_hash_key(hash_buffer_t * pbuff, char *str) ;
 int _9p_compare_hash_key(hash_buffer_t * buff1, hash_buffer_t * buff2) ;
+
+int _9p_hash_fid_init( _9p_parameter_t param) ;
+int _9p_hash_fid_set( _9p_conn_t * pconn, u32 fid, _9p_fid_t * pfid ) ;
+int _9p_hash_fid_get( _9p_conn_t * pconn, u32 fid, _9p_fid_t **  ppfid ) ;
+int _9p_hash_fid_del( _9p_conn_t * pconn, u32 fid ) ;
 
 /* Protocol functions */
 int _9p_not_2000L( _9p_request_data_t * preq9p, 

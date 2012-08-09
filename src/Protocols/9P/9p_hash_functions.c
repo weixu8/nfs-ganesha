@@ -200,3 +200,68 @@ int _9p_hash_fid_init( _9p_parameter_t param)
 
   return 0 ;
 }                               /* _9p_hash_fid__init */
+
+
+int _9p_hash_fid_get( _9p_conn_t * pconn, u32 fid, _9p_fid_t **  ppfid )
+{
+  hash_buffer_t buffkey;
+  hash_buffer_t buffval;
+  _9p_hash_key_t key  ;
+
+  key.peer_addr = pconn->peer_addr ;
+  key.peer_port = pconn->peer_port ;
+  key.fid = fid ;
+
+  if(HashTable_Get(ht_9pfids, &buffkey, &buffval) != HASHTABLE_SUCCESS)
+    return -1 ;
+
+  *ppfid = (_9p_fid_t *)buffval.pdata ;
+
+  return 0 ;
+}
+
+int _9p_hash_fid_del( _9p_conn_t * pconn, u32 fid )
+{
+  hash_buffer_t buffkey;
+  _9p_hash_key_t key  ;
+
+  key.peer_addr = pconn->peer_addr ;
+  key.peer_port = pconn->peer_port ;
+  key.fid = fid ;
+
+  buffkey.pdata = (char *)&key ;
+  buffkey.len = sizeof( _9p_hash_key_t ) ;
+
+  if( HashTable_Del( ht_9pfids, &buffkey, NULL, NULL ) != HASHTABLE_SUCCESS )
+   return -1 ;
+
+  return 0 ;
+}
+
+int _9p_hash_fid_set( _9p_conn_t * pconn, u32 fid, _9p_fid_t * pfid )
+{
+  hash_buffer_t buffkey;
+  hash_buffer_t buffdata;
+  _9p_hash_key_t * pkey = NULL ;
+
+  if( ( pkey  = gsh_malloc( sizeof( _9p_hash_key_t ) ) ) == NULL )
+    return -1 ;
+
+  pkey->peer_addr = pconn->peer_addr ;
+  pkey->peer_port = pconn->peer_port ;
+  pkey->fid = fid ;
+
+  buffkey.pdata = (char *)pkey ;
+  buffkey.len = sizeof( _9p_hash_key_t ) ;
+
+  buffdata.pdata = (char *)pfid ;
+  buffdata.len = sizeof( _9p_fid_t ) ;
+
+  if( HashTable_Test_And_Set(ht_9pfids, &buffkey, &buffdata,
+                              HASHTABLE_SET_HOW_SET_OVERWRITE ) != HASHTABLE_SUCCESS )
+    return -1 ;
+
+  return 0 ;
+}
+
+
