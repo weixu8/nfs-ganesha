@@ -72,15 +72,9 @@ hash_table_t *ht_9pfids;
 uint32_t _9p_hash_func(hash_parameter_t * p_hparam,
                        hash_buffer_t * buffclef)
 {
-  unsigned int sum = 0;
-  unsigned int i = 0;
-  unsigned char c;
+  _9p_hash_key_t * pkey = (_9p_hash_key_t * )buffclef->pdata ;
 
-  /* Compute the sum of all the characters */
-  for(i = 0, c = ((char *)buffclef->pdata)[0]; ((char *)buffclef->pdata)[i] != '\0';
-      c = ((char *)buffclef->pdata)[++i], sum += c) ;
-
-  return (unsigned long)(sum % p_hparam->index_size);
+  return (unsigned long)((pkey->peer_addr+pkey->fid) % p_hparam->index_size);
 }                               /*  ip_name_value_hash_func */
 
 
@@ -101,9 +95,16 @@ uint32_t _9p_hash_func(hash_parameter_t * p_hparam,
 uint64_t _9p_hash_rbt(hash_parameter_t * p_hparam,
                                 hash_buffer_t * buffclef)
 {
-  unsigned int result = 1;
+  _9p_hash_key_t * pkey = (_9p_hash_key_t * )buffclef->pdata ;
+  uint32_t part1 = 0 ;
+  uint32_t part2 = 0 ;
+  uint64_t result = 0LL ;
+ 
+  part1 = pkey->peer_addr ;
+  part2 = ( pkey->peer_port << 4 ) + pkey->fid ;
+  result = (part1 << 8 ) + part2 ;
 
-  return (unsigned long)result;
+  return result;
 }          
 
 
