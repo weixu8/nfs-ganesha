@@ -38,17 +38,7 @@
 #ifdef _USE_9P_RDMA
 #include <infiniband/arch.h>
 #include <rdma/rdma_cma.h>
-#include "trans_rdma.h"
-
-typedef struct _9p_datamr
-{
-  msk_data_t *data;
-  struct ibv_mr *mr;
-  msk_data_t *ackdata;
-  pthread_mutex_t *lock;
-  pthread_cond_t *cond;
-} _9p_datamr_t ;
-
+#include "mooshika.h"
 #endif
 
 typedef uint8_t   u8;
@@ -80,8 +70,10 @@ typedef uint64_t u64;
 
 //#define _9P_RDMA_CHUNK_SIZE 8*1024
 #define _9P_RDMA_CHUNK_SIZE 65*1024
-#define _9P_RDMA_RECV_NUM 1
+#define _9P_RDMA_BUFF_NUM 100 
 #define _9P_RDMA_BACKLOG 10 
+
+#define _9P_RDMA_OUT _9P_RDMA_BUFF_NUM/2
 
 /**
  * enum _9p_msg_t - 9P message types
@@ -324,17 +316,6 @@ typedef enum _9p_trans_type__
   _9P_RDMA
 } _9p_trans_type_t ;
 
-#ifdef _USE_9P_RDMA
-typedef struct _9p_rdma_ep__
-{
-  _9p_datamr_t * datamr ;
-  msk_trans_t  * trans ;
-} _9p_rdma_ep_t ;
-#endif
-
-
-
-
 typedef struct _9p_flush_hook__
 {
   int tag;
@@ -350,6 +331,25 @@ typedef struct _9p_flush_bucket__
 } _9p_flush_bucket_t;
 
 #define FLUSH_BUCKETS 64
+
+#ifdef _USE_9P_RDMA
+typedef struct _9p_datamr
+{
+  msk_data_t *data;
+  struct ibv_mr *mr;
+  msk_data_t *ackdata;
+  pthread_mutex_t *lock;
+  pthread_cond_t *cond;
+  struct _9p_datamr * sender ;
+  void * pconn ;
+} _9p_datamr_t ;
+
+typedef struct _9p_rdma_ep__
+{
+  _9p_datamr_t * datamr ;
+  msk_trans_t  * trans ;
+} _9p_rdma_ep_t ;
+#endif
 
 typedef struct _9p_conn__
 {
@@ -367,6 +367,7 @@ typedef struct _9p_conn__
   struct timeval  birth;  /* This is useful if same sockfd is reused on socket's close/open  */
   _9p_fid_t       fids[_9P_FID_PER_CONN] ;
   _9p_flush_bucket_t flush_buckets[FLUSH_BUCKETS];
+  unsigned long sequence ;
 } _9p_conn_t ;
 
 typedef struct _9p_request_data__
@@ -382,6 +383,7 @@ typedef struct _9p_hash_key__
   uint32_t peer_port ; /* 32 bits instead of 16 for alignment's reasons */
   uint32_t fid ;
 } _9p_hash_key_t ;
+
 
 
 typedef int (*_9p_function_t) (_9p_request_data_t * preq9p, 
