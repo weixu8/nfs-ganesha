@@ -95,7 +95,6 @@ int nfs3_Commit(nfs_arg_t * parg,
   fsal_attrib_list_t pre_attr;
   fsal_attrib_list_t *ppre_attr;
   uint64_t typeofcommit;
-  fsal_status_t fsal_status ;
 
   if(isDebug(COMPONENT_NFSPROTO))
     {
