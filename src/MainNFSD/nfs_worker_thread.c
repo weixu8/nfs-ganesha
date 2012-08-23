@@ -1259,6 +1259,11 @@ static void nfs_rpc_execute(nfs_request_data_t * preqnfs,
 
   LogFullDebug(COMPONENT_DISPATCH,
                "nfs_rpc_execute about to call nfs_export_check_access");
+#ifdef _USE_QUOTA
+  if( ptr_req->rq_prog == nfs_param.core_param.program[P_RQUOTA] )
+    export_check_result = EXPORT_PERMISSION_GRANTED ; /* No check for RQUOTA */
+  else
+#endif
   export_check_result = nfs_export_check_access(&pworker_data->hostaddr,
                                                 ptr_req,
                                                 pexport,
