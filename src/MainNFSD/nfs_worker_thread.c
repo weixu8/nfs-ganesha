@@ -1409,6 +1409,33 @@ static void nfs_rpc_execute(nfs_request_data_t * preqnfs,
                                                      ptr_req, 
                                                      &res_nfs); 
 
+      /* Hook to deal with altgroups */
+      if( ( ptr_req->rq_prog == nfs_param.core_param.program[P_NFS] ) &&
+          ( ptr_req->rq_vers == 3 ) &&
+          ( rc == NFS_REQ_OK ) &&
+          ( res_nfs.res_access3.status == NFS3ERR_ACCES ) ) /* Whatever the result, status is always the 1st field */
+       {
+         unsigned int cptgrp ;
+
+         for( cptgrp = 0 ; cptgrp < user_credentials.caller_glen ; cptgrp++ )
+          {
+             /* Loop on every alternative groups to see if one of them is granted */
+
+             FSAL_SetThrCred( user_credentials.caller_uid, 
+                              user_credentials.caller_garray[cptgrp] ) ;
+
+             rc = pworker_data->pfuncdesc->service_function(parg_nfs,
+                                                            pexport,
+                                                            pfsal_op_ctx,
+                                                            &(pworker_data->cache_inode_client),
+                                                            pworker_data->ht,
+                                                            ptr_req,
+                                                            &res_nfs);
+             if( ( rc == NFS_REQ_OK ) && ( res_nfs.res_access3.status == NFS3_OK ) )
+              break ;
+          }
+       }
+
       gettimeofday(&timer_end, NULL);
       timer_diff = time_diff(*timer_start, timer_end);
       memset(timer_start, 0, sizeof(struct timeval));
