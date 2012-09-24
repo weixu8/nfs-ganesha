@@ -2279,8 +2279,8 @@ static int HPSSFSAL_Common_Open_Bitfile(apithrdstate_t * ThreadContext, /* IN - 
       pthread_mutex_init(&open_bfdesc_ptr->Mutex, pthread_mutexattr_default);
       pthread_cond_init(&open_bfdesc_ptr->Cond, pthread_condattr_default);
 #else
-      open_bfdesc_ptr->Mutex = pthread_mutex_initializer;
-      open_bfdesc_ptr->Cond = pthread_cond_initializer;
+      pthread_mutex_init(&open_bfdesc_ptr->Mutex, pthread_mutexattr_default);
+      pthread_cond_init(&open_bfdesc_ptr->Cond, pthread_condattr_default);
 #endif
 
 #if HPSS_MAJOR_VERSION < 7
@@ -2704,10 +2704,11 @@ static int HPSSFSAL_Common_Open_File(apithrdstate_t * ThreadContext,    /* IN - 
           open_bfdesc_ptr->DataConnPtr = NULL;
           open_bfdesc_ptr->CoreServerUUID = objhandle.CoreServerUUID;
           open_bfdesc_ptr->Updates = 0;
-          open_bfdesc_ptr->Mutex = pthread_mutex_initializer;
-          open_bfdesc_ptr->Cond = pthread_cond_initializer;
           open_bfdesc_ptr->ListenDesc = lstndesc;
           open_bfdesc_ptr->ListenAddr_u = lstnaddr;
+
+          pthread_mutex_init(&open_bfdesc_ptr->Mutex, pthread_mutexattr_default);
+          pthread_cond_init(&open_bfdesc_ptr->Cond, pthread_condattr_default);
 
           API_OpenThrdCntlDesc(open_bfdesc_ptr);
 

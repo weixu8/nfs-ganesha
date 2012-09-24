@@ -47,6 +47,7 @@ fsal_status_t COMMON_GetClientContext(fsal_op_context_t * p_thr_context,  /* IN/
                                     fsal_gid_t * alt_groups,    /* IN */
                                     fsal_count_t nb_alt_groups /* IN */ )
 {
+#ifndef _USE_HPSS
   fsal_count_t ng = nb_alt_groups;
   unsigned int i;
 
@@ -77,6 +78,7 @@ fsal_status_t COMMON_GetClientContext(fsal_op_context_t * p_thr_context,  /* IN/
 		  LogFullDebug(COMPONENT_FSAL, "\tAlt grp: %d",
 			       p_thr_context->credential.alt_groups[i]);
   }
+#endif
   Return(ERR_FSAL_NO_ERROR, 0, INDEX_FSAL_GetClientContext);
 }
 
