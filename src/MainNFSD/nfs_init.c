@@ -2357,7 +2357,7 @@ void nfs_start(nfs_start_info_t * p_start_info)
 
   if( capget( &caphdr, &capdata ) != 0 )
     {
-      LogFatal(COMPONENT_INIT,
+      LogCrit(COMPONENT_INIT,
 	       "Failed to query capabilities for process" ) ;
     }
 
@@ -2368,7 +2368,7 @@ void nfs_start(nfs_start_info_t * p_start_info)
 
   if( capset( &caphdr, &capdata ) != 0 )
     {
-      LogFatal(COMPONENT_INIT,
+      LogCrit(COMPONENT_INIT,
 	       "Failed to set capabilities for process" ) ;
     }
   
