@@ -148,11 +148,6 @@ int _9p_attach( _9p_request_data_t * preq9p,
   fsdata.fh_desc.start = (char *)pexport->proot_handle ;
   FSAL_ExpandHandle(pfid->fsal_op_context.export_context, FSAL_DIGEST_SIZEOF, &fsdata.fh_desc);
 
-  /* refcount */
-  if (pfid->pentry) {
-      cache_inode_put(pfid->pentry);
-  }
-
   /* refcount +1 */
   pfid->pentry = cache_inode_get( &fsdata,
                                   &fsalattr,
