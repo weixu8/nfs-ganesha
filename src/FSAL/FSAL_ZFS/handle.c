@@ -140,10 +140,7 @@ static fsal_status_t zfs_lookup(struct fsal_obj_handle *parent,
 	fsal_errors_t fsal_error = ERR_FSAL_NO_ERROR;
 	int retval;
 	struct stat stat;
-	char *link_content = NULL;
 	struct zfs_file_handle *dir_hdl = NULL;
-	ssize_t retlink;
-	char link_buff[1024];
 	struct zfs_file_handle *fh
 		= alloca(sizeof(struct zfs_file_handle));
        creden_t cred;
@@ -251,20 +248,10 @@ static fsal_status_t zfs_lookup(struct fsal_obj_handle *parent,
                                    &stat, 
                                    &type );
 
-	if(retval < 0) {
-		retval = errno;
+	if(retval ) {
 		fsal_error = posix2fsal_error(retval);
 		goto errout;
 	}
-	if(S_ISLNK(stat.st_mode)) { /* I could lazy eval this... */
-                retlink = libzfswrap_readlink( ZFSFSAL_GetVFS( parent_hdl->handle ), 
-                                               &cred,
-                                               hdl->handle->zfs_handle, 
-                                               link_buff,
-                                               1024);
-		link_buff[retlink] = '\0';
-		link_content = &link_buff[0];
-	} 
 	return fsalstat(ERR_FSAL_NO_ERROR, 0);
 	
 errout:
@@ -310,7 +297,7 @@ static fsal_status_t zfs_create( struct fsal_obj_handle *dir_hdl,
                                     fsal2unix_mode(attrib->mode),
                                     &object);
 
-	if(retval < 0) {
+	if(retval ) {
 		goto fileerr;
 	}
 
@@ -371,7 +358,7 @@ static fsal_status_t zfs_mkdir( struct fsal_obj_handle *dir_hdl,
                                    fsal2unix_mode(attrib->mode),
                                    &object);
 
-	if(retval < 0) {
+	if(retval ) {
 		goto fileerr;
 	}
 
@@ -399,13 +386,13 @@ errout:
 }
 
 
-static fsal_status_t lustre_makenode(struct fsal_obj_handle *dir_hdl,
-                              const struct req_op_context *opctx,
-                              const char *name,
-                              object_file_type_t nodetype,  /* IN */
-                              fsal_dev_t *dev,  /* IN */
-                              struct attrlist *attrib,
-                              struct fsal_obj_handle **handle)
+static fsal_status_t zfs_makenode( struct fsal_obj_handle *dir_hdl,
+                                   const struct req_op_context *opctx,
+                                   const char *name,
+                                   object_file_type_t nodetype,  /* IN */
+                                   fsal_dev_t *dev,              /* IN */
+                                   struct attrlist *attrib,
+                                   struct fsal_obj_handle **handle )
 {
      return fsalstat(ERR_FSAL_NOTSUPP, 0);
 }
@@ -416,21 +403,19 @@ static fsal_status_t lustre_makenode(struct fsal_obj_handle *dir_hdl,
  *  anyway (default is 0777) because open uses that target's mode
  */
 
-static fsal_status_t lustre_makesymlink(struct fsal_obj_handle *dir_hdl,
-                                 const struct req_op_context *opctx,
-                                 const char *name,
-                                 const char *link_path,
-                                 struct attrlist *attrib,
-                                 struct fsal_obj_handle **handle)
+static fsal_status_t zfs_makesymlink(struct fsal_obj_handle *dir_hdl,
+                                     const struct req_op_context *opctx,
+                                     const char *name,
+                                     const char *link_path,
+                                     struct attrlist *attrib,
+                                     struct fsal_obj_handle **handle)
 {
 	struct zfs_fsal_obj_handle *myself, *hdl;
-        char dirpath[MAXPATHLEN] ;
-        char newpath[MAXPATHLEN] ;
-	struct stat stat;
 	fsal_errors_t fsal_error = ERR_FSAL_NO_ERROR;
 	int retval = 0;
-	uid_t user;
-	gid_t group;
+        creden_t cred;
+        inogen_t object;
+
 	struct zfs_file_handle *fh
 		= alloca(sizeof(struct zfs_file_handle)  );
 
@@ -443,56 +428,33 @@ static fsal_status_t lustre_makesymlink(struct fsal_obj_handle *dir_hdl,
 	}
 	memset(fh, 0, sizeof(struct zfs_file_handle) );
 	myself = container_of(dir_hdl, struct zfs_fsal_obj_handle, obj_handle);
-	user = attrib->owner;
-	group = attrib->group;
-        lustre_handle_to_path( lustre_get_root_path( dir_hdl->export ), myself->handle, dirpath ) ;
-	retval = lstat(dirpath, &stat );
-	if(retval < 0) {
-		goto direrr;
-	}
-	if(stat.st_mode & S_ISGID)
-		group = -1; /*setgid bit on dir propagates dir group owner */
-	
-	/* create it with no access because we are root when we do this */
-        snprintf( newpath, MAXPATHLEN, "%s/%s", dirpath, name ) ;
-	retval = symlink(link_path, newpath );
-	if(retval < 0) {
-		goto direrr;
-	}
-	/* do this all by hand because we can't use fchmodat on symlinks...
-	 */
-	retval = lchown( newpath, user, group );
-	if(retval < 0) {
-		goto linkerr;
-	}
+        cred.uid = attrib->owner ;
+        cred.gid = attrib->group ;
 
-	retval = lustre_name_to_handle_at( lustre_get_root_path( dir_hdl->export),myself->handle, name, fh, 0);
-	if(retval < 0) {
-		goto linkerr;
-	}
-	/* now get attributes info, being careful to get the link, not the target */
-	retval = lstat(newpath, &stat);
-	if(retval < 0) {
-		goto linkerr;
-	}
+        retval = libzfswrap_symlink( zfs_get_root_pvfs( dir_hdl->export ),
+                                     &cred,
+                                     myself->handle->zfs_handle,
+                                     name,
+                                     link_path,
+                                     &object);
+	if(retval ) 
+		goto err;
+
 
 	/* allocate an obj_handle and fill it up */
-	hdl = alloc_handle(fh, &stat, link_path, NULL, NULL, dir_hdl->export);
+	hdl = alloc_handle(fh, NULL, SYMBOLIC_LINK, dir_hdl->export);
 	if(hdl == NULL) {
 		retval = ENOMEM;
-		goto errout;
+		goto err;
 	}
 	*handle = &hdl->obj_handle;
+        hdl->handle->zfs_handle = object ;
+        hdl->handle->type = SYMBOLIC_LINK ;
+        hdl->handle->i_snap= 0  ;
+
 	return fsalstat(ERR_FSAL_NO_ERROR, 0);
 
-linkerr:
-	retval = errno;
-	unlink( newpath);
-	goto errout;
-
-direrr:
-	retval = errno;
-errout:
+err:
 	if(retval == ENOENT)
 		fsal_error = ERR_FSAL_STALE;
 	else
@@ -500,73 +462,52 @@ errout:
 	return fsalstat(fsal_error, retval);
 }
 
-static fsal_status_t lustre_readsymlink(struct fsal_obj_handle *obj_hdl,
+static fsal_status_t zfs_readsymlink(struct fsal_obj_handle *obj_hdl,
                                  const struct req_op_context *opctx,
                                  char *link_content,
                                  size_t *link_len,
                                  bool refresh)
 {
 	struct zfs_fsal_obj_handle *myself = NULL;
-        char mypath[MAXPATHLEN] ;
 	int retval = 0;
+        int retlink = 0 ;
 	fsal_errors_t fsal_error = ERR_FSAL_NO_ERROR;
+        creden_t cred;
 
 	if(obj_hdl->type != SYMBOLIC_LINK) {
 		fsal_error = ERR_FSAL_FAULT;
 		goto out;
 	}
 	myself = container_of(obj_hdl, struct zfs_fsal_obj_handle, obj_handle);
-	if(refresh) { /* lazy load or LRU'd storage */
-		ssize_t retlink;
-		char link_buff[1024];
 
-		if(myself->u.symlink.link_content != NULL) {
-			free(myself->u.symlink.link_content);
-			myself->u.symlink.link_content = NULL;
-			myself->u.symlink.link_size = 0;
-		}
-                lustre_handle_to_path( lustre_get_root_path( obj_hdl->export ), myself->handle, mypath ) ;
-		retlink = readlink( mypath, link_buff, 1024);
-		if(retlink < 0) {
-			retval = errno;
-			fsal_error = posix2fsal_error(retval);
-			goto out;
-		}
+        cred.uid = opctx->creds->caller_uid;
+	cred.gid = opctx->creds->caller_gid;
 
-		myself->u.symlink.link_content = malloc(retlink + 1);
-		if(myself->u.symlink.link_content == NULL) {
-			fsal_error = ERR_FSAL_NOMEM;
-			goto out;
-		}
-		memcpy(myself->u.symlink.link_content, link_buff, retlink);
-		myself->u.symlink.link_content[retlink] = '\0';
-		myself->u.symlink.link_size = retlink + 1;
+        retlink = libzfswrap_readlink( zfs_get_root_pvfs( obj_hdl->export ),
+                                       &cred,
+                                       myself->handle->zfs_handle,
+                                       link_content,
+                                       *link_len ) ;
+
+	if(retlink ) {
+		fsal_error = posix2fsal_error(retlink);
+                goto out ;        
 	}
-	if(myself->u.symlink.link_content == NULL
-	   || *link_len <= myself->u.symlink.link_size) {
-		fsal_error = ERR_FSAL_FAULT; /* probably a better error?? */
-		goto out;
-	}
-	memcpy(link_content,
-	       myself->u.symlink.link_content,
-	       myself->u.symlink.link_size);
 
+	*link_len = strlen( link_content ) ;
 out:
-	*link_len = myself->u.symlink.link_size;
 	return fsalstat(fsal_error, retval);	
 }
 
-static fsal_status_t lustre_linkfile(struct fsal_obj_handle *obj_hdl,
+static fsal_status_t zfs_linkfile(struct fsal_obj_handle *obj_hdl,
                               const struct req_op_context *opctx,
 			      struct fsal_obj_handle *destdir_hdl,
 			      const char *name)
 {
 	struct zfs_fsal_obj_handle *myself, *destdir;
-        char srcpath[MAXPATHLEN] ;
-        char destdirpath[MAXPATHLEN] ;
-        char destnamepath[MAXPATHLEN] ;
 	int retval = 0;
 	fsal_errors_t fsal_error = ERR_FSAL_NO_ERROR;
+        creden_t cred;
 
 	if( !obj_hdl->export->ops->fs_supports(obj_hdl->export,
 					       fso_link_support)) {
@@ -574,16 +515,21 @@ static fsal_status_t lustre_linkfile(struct fsal_obj_handle *obj_hdl,
 		goto out;
 	}
 	myself = container_of(obj_hdl, struct zfs_fsal_obj_handle, obj_handle);
-        lustre_handle_to_path( lustre_get_root_path( obj_hdl->export ), myself->handle, srcpath ) ;
 
 	destdir = container_of(destdir_hdl, struct zfs_fsal_obj_handle, obj_handle);
-        lustre_handle_to_path( lustre_get_root_path( obj_hdl->export ), destdir->handle, destdirpath ) ;
 
-        snprintf( destnamepath, MAXPATHLEN, "%s/%s", destdirpath, name ) ;
+        cred.uid = opctx->creds->caller_uid;
+	cred.gid = opctx->creds->caller_gid;
 
-	retval = link(srcpath, destnamepath);
-	if(retval == -1) {
-		retval = errno;
+        retval = libzfswrap_link( zfs_get_root_pvfs( obj_hdl->export ),
+                                  &cred,
+                                  destdir->handle->zfs_handle, 
+                                  myself->handle->zfs_handle, 
+                                  name );
+
+
+	if(retval) 
+        {
 		fsal_error = posix2fsal_error(retval);
 	}
 out:
@@ -620,7 +566,7 @@ struct linux_dirent {
  * @param cb [IN] callback function
  * @param eof [OUT] eof marker true == end of dir
  */
-
+#if plustard
 static fsal_status_t lustre_read_dirents(struct fsal_obj_handle *dir_hdl,
 				  const struct req_op_context *opctx,
 				  uint32_t entry_cnt,
@@ -714,33 +660,34 @@ done:
 out:
 	return fsalstat(fsal_error, retval);
 }
+#endif
 
-
-static fsal_status_t lustre_renamefile(struct fsal_obj_handle *olddir_hdl,
-                                const struct req_op_context *opctx,
-				const char *old_name,
-				struct fsal_obj_handle *newdir_hdl,
-				const char *new_name)
+static fsal_status_t zfs_renamefile( struct fsal_obj_handle *olddir_hdl,
+                                     const struct req_op_context *opctx,
+			             const char *old_name,
+				     struct fsal_obj_handle *newdir_hdl,
+				     const char *new_name)
 {
 	struct zfs_fsal_obj_handle *olddir, *newdir;
-        char olddirpath[MAXPATHLEN] ;
-        char oldnamepath[MAXPATHLEN] ;
-        char newdirpath[MAXPATHLEN] ;
-        char newnamepath[MAXPATHLEN] ;
 	fsal_errors_t fsal_error = ERR_FSAL_NO_ERROR;
 	int retval = 0;
+        creden_t cred;
 
 	olddir = container_of(olddir_hdl, struct zfs_fsal_obj_handle, obj_handle);
-        lustre_handle_to_path( lustre_get_root_path( olddir_hdl->export ), olddir->handle, olddirpath ) ;
-        snprintf( oldnamepath, MAXPATHLEN, "%s/%s", olddirpath, old_name ) ;
-
 	newdir = container_of(newdir_hdl, struct zfs_fsal_obj_handle, obj_handle);
-        lustre_handle_to_path( lustre_get_root_path( newdir_hdl->export ), newdir->handle, newdirpath ) ;
-        snprintf( newnamepath, MAXPATHLEN, "%s/%s", newdirpath, new_name ) ;
 
-	retval = rename(oldnamepath, newnamepath);
-	if(retval < 0) {
-		retval = errno;
+        cred.uid = opctx->creds->caller_uid;
+	cred.gid = opctx->creds->caller_gid;
+
+        retval = libzfswrap_rename( zfs_get_root_pvfs( olddir_hdl->export ),
+	        		    &cred,
+                                    olddir->handle->zfs_handle,
+			            old_name,
+                                    newdir->handle->zfs_handle,
+			            new_name);
+
+
+	if(retval ) {
 		fsal_error = posix2fsal_error(retval);
 	}
 	return fsalstat(fsal_error, retval);	
@@ -757,38 +704,41 @@ static fsal_status_t zfs_getattrs(struct fsal_obj_handle *obj_hdl,
 				  const struct req_op_context *opctx)
 {
 	struct zfs_fsal_obj_handle *myself;
-        char mypath[MAXPATHLEN] ;
-	int open_flags = O_RDONLY;
 	struct stat stat;
 	fsal_errors_t fsal_error = ERR_FSAL_NO_ERROR;
 	fsal_status_t st;
 	int retval = 0;
+        int type = 0 ;
+        creden_t cred;
 
 	myself = container_of(obj_hdl, struct zfs_fsal_obj_handle, obj_handle);
-	if(obj_hdl->type == REGULAR_FILE) {
-		if(myself->u.file.fd < 0) {
-			goto open_file;  /* no file open at the moment */
-		}
-	} else if(obj_hdl->type == SOCKET_FILE) {
-                lustre_handle_to_path( lustre_get_root_path( obj_hdl->export ), 
-                                                myself->u.sock.sock_dir, mypath ) ;
-		retval = lstat( mypath, &stat ) ;
-		if(retval < 0) {
-			goto errout;
-		}
-	} else {
-		if(obj_hdl->type == SYMBOLIC_LINK)
-			open_flags |= O_PATH;
-		else if(obj_hdl->type == FIFO_FILE)
-			open_flags |= O_NONBLOCK;
-	open_file:
-                lustre_handle_to_path( lustre_get_root_path( obj_hdl->export ), myself->handle, mypath ) ;
-		retval = lstat( mypath, 
-				&stat ) ;
-		if(retval < 0) {
-			goto errout;
-		}
-	}
+
+        cred.uid = opctx->creds->caller_uid;
+	cred.gid = opctx->creds->caller_gid;
+
+         if(  myself->handle->zfs_handle.inode == ZFS_SNAP_DIR_INODE &&
+              myself->handle->zfs_handle.generation == 0)
+          {
+            memset(&stat, 0, sizeof(stat));
+            stat.st_mode = S_IFDIR | 0755;
+            stat.st_ino = ZFS_SNAP_DIR_INODE;
+            stat.st_nlink = 2;
+            stat.st_ctime = time(NULL);
+            stat.st_atime = stat.st_ctime;
+            stat.st_mtime = stat.st_ctime;
+            retval = 0;
+          }
+         else
+          {
+            retval = libzfswrap_getattr( zfs_get_root_pvfs( obj_hdl->export ),
+                                         &cred,
+                                         myself->handle->zfs_handle, 
+                                         &stat, 
+                                         &type);
+
+	    if(retval )
+		goto errout;
+          }
 
 	/* convert attributes */
 	st = posix2fsal_attributes(&stat, &obj_hdl->attributes);
@@ -802,7 +752,6 @@ static fsal_status_t zfs_getattrs(struct fsal_obj_handle *obj_hdl,
 	goto out;
 
 errout:
-        retval = errno;
         if(retval == ENOENT)
                 fsal_error = ERR_FSAL_STALE;
         else
@@ -815,124 +764,71 @@ out:
  * NOTE: this is done under protection of the attributes rwlock in the cache entry.
  */
 
-static fsal_status_t lustre_setattrs(struct fsal_obj_handle *obj_hdl,
-				     const struct req_op_context *opctx,
-			             struct attrlist *attrs)
+static fsal_status_t zfs_setattrs( struct fsal_obj_handle *obj_hdl,
+				   const struct req_op_context *opctx,
+			           struct attrlist *attrs)
 {
-	struct zfs_fsal_obj_handle *myself;
-        char mypath[MAXPATHLEN] ;
-        char mysockpath[MAXPATHLEN] ;
-	struct stat stat;
-	fsal_errors_t fsal_error = ERR_FSAL_NO_ERROR;
-	int retval = 0;
+  struct zfs_fsal_obj_handle *myself;
+  struct stat stats = { 0 } ;
+  fsal_errors_t fsal_error = ERR_FSAL_NO_ERROR;
+  int retval = 0;
+  int flags = 0;
+  creden_t cred;
+  struct stat new_stat = { 0 };
 
-	/* apply umask, if mode attribute is to be changed */
-	if(FSAL_TEST_MASK(attrs->mask, ATTR_MODE)) {
+  /* apply umask, if mode attribute is to be changed */
+  if(FSAL_TEST_MASK(attrs->mask, ATTR_MODE))
+     {
 		attrs->mode
 			&= ~obj_hdl->export->ops->fs_umask(obj_hdl->export);
-	}
-	myself = container_of(obj_hdl, struct zfs_fsal_obj_handle, obj_handle);
+     }
+  myself = container_of(obj_hdl, struct zfs_fsal_obj_handle, obj_handle);
 
-	/* This is yet another "you can't get there from here".  If this object
-	 * is a socket (AF_UNIX), an fd on the socket s useless _period_.
-	 * If it is for a symlink, without O_PATH, you will get an ELOOP error
-	 * and (f)chmod doesn't work for a symlink anyway - not that it matters
-	 * because access checking is not done on the symlink but the final target.
-	 * AF_UNIX sockets are also ozone material.  If the socket is already active
-	 * listeners et al, you can manipulate the mode etc.  If it is just sitting
-	 * there as in you made it with a mknod (one of those leaky abstractions...)
-	 * or the listener forgot to unlink it, it is lame duck.
-	 */
+  if(myself->handle->i_snap != 0)
+  {
+    LogDebug(COMPONENT_FSAL, "Trying to change the attributes of an object inside a snapshot");
+    fsalstat(ERR_FSAL_ROFS, 0);
+  }
 
-	if(obj_hdl->type == SOCKET_FILE) {
-                lustre_handle_to_path( lustre_get_root_path( obj_hdl->export ), myself->u.sock.sock_dir, mypath ) ;
-		retval = lstat( mypath, &stat ) ;
-	} else {
-                lustre_handle_to_path( lustre_get_root_path( obj_hdl->export ), myself->handle, mypath ) ;
-		retval = lstat( mypath, &stat);
-	}
-	if(retval < 0) {
-		retval = errno;
-		fsal_error = posix2fsal_error(retval);
-		goto out;
-	}
-	/** CHMOD **/
-	if(FSAL_TEST_MASK(attrs->mask, ATTR_MODE)) {
-		/* The POSIX chmod call doesn't affect the symlink object, but
-		 * the entry it points to. So we must ignore it.
-		 */
-		if(!S_ISLNK(stat.st_mode)) {
-			if(obj_hdl->type == SOCKET_FILE)
-                          {
-                                snprintf( mysockpath, MAXPATHLEN, "%s/%s", mypath, myself->u.sock.sock_name ) ;
-				retval = chmod( mysockpath,
-						 fsal2unix_mode(attrs->mode));
-                          }   
-			else
-				retval = chmod(mypath, fsal2unix_mode(attrs->mode));
+  /* First, check that FSAL attributes */ 
+  if(FSAL_TEST_MASK(attrs->mask, ATTR_MODE))
+  {
+    flags |= LZFSW_ATTR_MODE;
+    stats.st_mode = fsal2unix_mode(attrs->mode);
+  }
+  if(FSAL_TEST_MASK(attrs->mask, ATTR_OWNER))
+  {
+    flags |= LZFSW_ATTR_UID;
+    stats.st_uid = attrs->owner;
+  }
+  if(FSAL_TEST_MASK(attrs->mask, ATTR_GROUP))
+  {
+    flags |= LZFSW_ATTR_GID;
+    stats.st_gid = attrs->group;
+  }
+  if(FSAL_TEST_MASK(attrs->mask, ATTR_ATIME))
+  {
+    flags |= LZFSW_ATTR_ATIME;
+    stats.st_atime = attrs->atime.seconds;
+  }
+  if(FSAL_TEST_MASK(attrs->mask, ATTR_MTIME))
+  {
+    flags |= LZFSW_ATTR_MTIME;
+    stats.st_mtime = attrs->mtime.seconds;
+  }
 
-			if(retval != 0) {
-				goto fileerr;
-			}
-		}
-	}
-		
-	/**  CHOWN  **/
-	if(FSAL_TEST_MASK(attrs->mask,
-			  ATTR_OWNER | ATTR_GROUP)) {
-		uid_t user = FSAL_TEST_MASK(attrs->mask, ATTR_OWNER)
-                        ? (int)attrs->owner : -1;
-		gid_t group = FSAL_TEST_MASK(attrs->mask, ATTR_GROUP)
-                        ? (int)attrs->group : -1;
+  cred.uid = opctx->creds->caller_uid;
+  cred.gid = opctx->creds->caller_gid;
 
-		if(obj_hdl->type == SOCKET_FILE)
-                  {
-                     snprintf( mysockpath, MAXPATHLEN, "%s/%s", mypath, myself->u.sock.sock_name ) ;
-		     retval = lchown( mysockpath,
-				      user,
-				      group ) ;
-                  }
-		else
-			retval = lchown(mypath, user, group);
+  retval = libzfswrap_setattr( zfs_get_root_pvfs( obj_hdl->export ),
+                               &cred,
+                               myself->handle->zfs_handle, 
+                               &stats, 
+                               flags, 
+                               &new_stat);
 
-		if(retval) {
-			goto fileerr;
-		}
-	}
-		
-	/**  UTIME  **/
-	if(FSAL_TEST_MASK(attrs->mask, ATTR_ATIME | ATTR_MTIME)) {
-		struct timeval timebuf[2];
-
-		/* Atime */
-		timebuf[0].tv_sec =
-			(FSAL_TEST_MASK(attrs->mask, ATTR_ATIME) ?
-                         (time_t) attrs->atime.seconds : stat.st_atime);
-		timebuf[0].tv_usec = 0;
-
-		/* Mtime */
-		timebuf[1].tv_sec =
-			(FSAL_TEST_MASK(attrs->mask, ATTR_MTIME) ?
-			 (time_t) attrs->mtime.seconds : stat.st_mtime);
-		timebuf[1].tv_usec = 0;
-		if(obj_hdl->type == SOCKET_FILE)
-                  {
-                     snprintf( mysockpath, MAXPATHLEN, "%s/%s", mypath, myself->u.sock.sock_name ) ;
-		     retval = utimes( mysockpath, timebuf ) ;
-                  }
-		else
-			retval = utimes(mypath, timebuf);
-		if(retval != 0) {
-			goto fileerr;
-		}
-	}
-	return fsalstat(fsal_error, retval);	
-
-fileerr:
-        retval = errno;
-        fsal_error = posix2fsal_error(retval);
-out:
-	return fsalstat(fsal_error, retval);
+  fsal_error = posix2fsal_error(retval);
+  return fsalstat(fsal_error, retval);
 }
 
 /* compare
@@ -949,11 +845,11 @@ static bool compare(struct fsal_obj_handle *obj_hdl,
 
 	myself = container_of(obj_hdl, struct zfs_fsal_obj_handle, obj_handle);
 	other = container_of(other_hdl, struct zfs_fsal_obj_handle, obj_handle);
-	if( (obj_hdl->type             != other_hdl->type)          ||
-	    (myself->handle->fid.f_seq != other->handle->fid.f_seq) ||
-	    (myself->handle->fid.f_oid != other->handle->fid.f_oid) ||
-	    (myself->handle->fid.f_ver != other->handle->fid.f_ver) ||
-	    (myself->handle->inode     != other->handle->inode) )
+	if( (obj_hdl->type                         != other_hdl->type)          ||
+	    (myself->handle->i_snap                != other->handle->i_snap) ||
+	    (myself->handle->type                  != other->handle->type) ||
+	    (myself->handle->zfs_handle.inode      != other->handle->zfs_handle.inode) ||
+	    (myself->handle->zfs_handle.generation != other->handle->zfs_handle.generation) )
 		return false;
 
         return true;
@@ -964,71 +860,69 @@ static bool compare(struct fsal_obj_handle *obj_hdl,
  * size should really be off_t...
  */
 
-static fsal_status_t lustre_file_truncate(struct fsal_obj_handle *obj_hdl,
-					  const struct req_op_context *opctx,
-					  uint64_t length)
+static fsal_status_t zfs_file_truncate( struct fsal_obj_handle *obj_hdl,
+					const struct req_op_context *opctx,
+					uint64_t length)
 {
-	struct zfs_fsal_obj_handle *myself;
-	fsal_errors_t fsal_error = ERR_FSAL_NO_ERROR;
-        char mypath[MAXPATHLEN] ;
-	int retval = 0;
+  struct zfs_fsal_obj_handle *myself;
+  fsal_errors_t fsal_error = ERR_FSAL_NO_ERROR;
+  int retval = 0;
+  creden_t cred;
 
-	if(obj_hdl->type != REGULAR_FILE) {
-		fsal_error = ERR_FSAL_INVAL;
-		goto errout;
-	}
-	myself = container_of(obj_hdl, struct zfs_fsal_obj_handle, obj_handle);
-        lustre_handle_to_path( lustre_get_root_path( obj_hdl->export ), myself->handle, mypath ) ;
-	retval = truncate( mypath, length);
-	if(retval < 0) {
-		retval = errno;
-		fsal_error = posix2fsal_error(retval);
-	}
-errout:
-	return fsalstat(fsal_error, retval);	
+  cred.uid = opctx->creds->caller_uid;
+  cred.gid = opctx->creds->caller_gid;
+
+  if(obj_hdl->type != REGULAR_FILE) {
+	fsal_error = ERR_FSAL_INVAL;
+        return fsalstat(fsal_error, retval);	
+  }
+  myself = container_of(obj_hdl, struct zfs_fsal_obj_handle, obj_handle);
+ 
+  retval = libzfswrap_truncate( zfs_get_root_pvfs( obj_hdl->export ),
+ 		                &cred,
+                                myself->handle->zfs_handle, 
+                                length);
+
+  if(retval ) 
+     fsal_error = posix2fsal_error(retval);
+	
+  return fsalstat(fsal_error, retval);	
 }
 
 /* file_unlink
  * unlink the named file in the directory
  */
 
-static fsal_status_t lustre_file_unlink(struct fsal_obj_handle *dir_hdl,
-					const struct req_op_context *opctx,
-					const char *name)
+static fsal_status_t zfs_file_unlink( struct fsal_obj_handle *dir_hdl,
+				      const struct req_op_context *opctx,
+				      const char *name)
 {
 	struct zfs_fsal_obj_handle *myself;
 	fsal_errors_t fsal_error = ERR_FSAL_NO_ERROR;
-        char dirpath[MAXPATHLEN] ;
-        char filepath[MAXPATHLEN] ;
-	struct stat stat;
 	int retval = 0;
+        creden_t cred;
+
+        cred.uid = opctx->creds->caller_uid;
+        cred.gid = opctx->creds->caller_gid;
 
 	myself = container_of(dir_hdl, struct zfs_fsal_obj_handle, obj_handle);
-        lustre_handle_to_path( lustre_get_root_path( dir_hdl->export ), myself->handle, dirpath ) ;
-        snprintf( filepath, MAXPATHLEN, "%s/%s", dirpath, name ) ;
-	retval = lstat( filepath, &stat );
-	if(retval < 0) {
-		retval = errno;
-		if(retval == ENOENT)
-			fsal_error = ERR_FSAL_STALE;
-		else
-			fsal_error = posix2fsal_error(retval);
-		goto out;
-	}
-        if( S_ISDIR(stat.st_mode))
-	  retval = rmdir( filepath ) ;
+
+        if( myself->handle->type == DIRECTORY )
+          retval = libzfswrap_rmdir( zfs_get_root_pvfs( dir_hdl->export ),
+                                     &cred,
+                                     myself->handle->zfs_handle,
+                                     name);
+
         else
-	  retval = unlink( filepath ) ;
-	if(retval < 0) {
-		retval = errno;
-		if(retval == ENOENT)
-			fsal_error = ERR_FSAL_STALE;
-		else
-			fsal_error = posix2fsal_error(retval);
-	}
+          retval = libzfswrap_unlink( zfs_get_root_pvfs( dir_hdl->export ),
+                                      &cred,
+                                      myself->handle->zfs_handle,
+                                      name);
+  
+       if(retval ) 
+          fsal_error = posix2fsal_error(retval);
 	
-out:
-	return fsalstat(fsal_error, retval);	
+  return fsalstat(fsal_error, retval);	
 }
 
 
@@ -1039,9 +933,9 @@ out:
  * the whole struct.
  */
 
-static fsal_status_t lustre_handle_digest(struct fsal_obj_handle *obj_hdl,
-                                   fsal_digesttype_t output_type,
-                                   struct gsh_buffdesc *fh_desc)
+static fsal_status_t zfs_handle_digest( struct fsal_obj_handle *obj_hdl,
+                                        fsal_digesttype_t output_type,
+                                        struct gsh_buffdesc *fh_desc)
 {
 	uint32_t ino32;
 	uint64_t ino64;
@@ -1059,7 +953,7 @@ static fsal_status_t lustre_handle_digest(struct fsal_obj_handle *obj_hdl,
 	case FSAL_DIGEST_NFSV2:
 	case FSAL_DIGEST_NFSV3:
 	case FSAL_DIGEST_NFSV4:
-		fh_size = lustre_sizeof_handle(fh);
+		fh_size = zfs_sizeof_handle(fh);
                 if(fh_desc->len < fh_size)
                         goto errout;
                 memcpy(fh_desc->addr, fh, fh_size);
@@ -1068,13 +962,13 @@ static fsal_status_t lustre_handle_digest(struct fsal_obj_handle *obj_hdl,
 		fh_size = FSAL_DIGEST_SIZE_FILEID2;
 		if(fh_desc->len < fh_size)
 			goto errout;
-		memcpy(fh_desc->addr, fh, fh_size);
+		memcpy(fh_desc->addr, &fh->zfs_handle.inode, fh_size);
 		break;
 	case FSAL_DIGEST_FILEID3:
 		fh_size = FSAL_DIGEST_SIZE_FILEID3;
 		if(fh_desc->len < fh_size)
 			goto errout;
-		memcpy(&ino32, fh, sizeof(ino32));
+		memcpy(&ino32, &fh->zfs_handle.inode, sizeof(ino32));
 		ino64 = ino32;
 		memcpy(fh_desc->addr, &ino64, fh_size);
 		break;
@@ -1082,9 +976,7 @@ static fsal_status_t lustre_handle_digest(struct fsal_obj_handle *obj_hdl,
 		fh_size = FSAL_DIGEST_SIZE_FILEID4;
 		if(fh_desc->len < fh_size)
 			goto errout;
-		memcpy(&ino32, fh, sizeof(ino32));
-		ino64 = ino32;
-		memcpy(fh_desc->addr, &ino64, fh_size);
+		memcpy(fh_desc->addr, &fh->zfs_handle.inode, fh_size);
 		break;
 	default:
 		return fsalstat(ERR_FSAL_SERVERFAULT, 0);
@@ -1106,14 +998,14 @@ errout:
  * after the handle is released.
  */
 
-static void lustre_handle_to_key(struct fsal_obj_handle *obj_hdl,
-                          struct gsh_buffdesc *fh_desc)
+static void zfs_handle_to_key( struct fsal_obj_handle *obj_hdl,
+                               struct gsh_buffdesc *fh_desc )
 {
 	struct zfs_fsal_obj_handle *myself;
 
 	myself = container_of(obj_hdl, struct zfs_fsal_obj_handle, obj_handle);
 	fh_desc->addr = myself->handle;
-	fh_desc->len = lustre_sizeof_handle(myself->handle);
+	fh_desc->len = zfs_sizeof_handle(myself->handle);
 }
 
 /*
@@ -1132,15 +1024,14 @@ static fsal_status_t release(struct fsal_obj_handle *obj_hdl)
 	pthread_mutex_lock(&obj_hdl->lock);
 	obj_hdl->refs--;  /* subtract the reference when we were created */
 	if(obj_hdl->refs != 0 || (obj_hdl->type == REGULAR_FILE
-				  && (myself->u.file.fd >=0
-				      || myself->u.file.openflags != FSAL_O_CLOSED))) {
+				  && myself->u.file.openflags != FSAL_O_CLOSED)) {
 		pthread_mutex_unlock(&obj_hdl->lock);
 		retval = obj_hdl->refs > 0 ? EBUSY : EINVAL;
 		LogCrit(COMPONENT_FSAL,
 			"Tried to release busy handle, "
-			"hdl = 0x%p->refs = %d, fd = %d, openflags = 0x%x",
+			"hdl = 0x%p->refs = %d, openflags = 0x%x",
 			obj_hdl, obj_hdl->refs,
-			myself->u.file.fd, myself->u.file.openflags);
+			myself->u.file.openflags);
 		return fsalstat(posix2fsal_error(retval), retval);
 	}
 	fsal_detach_handle(exp, &obj_hdl->handles);
@@ -1151,167 +1042,44 @@ static fsal_status_t release(struct fsal_obj_handle *obj_hdl)
 	if(obj_hdl->type == SYMBOLIC_LINK) {
 		if(myself->u.symlink.link_content != NULL)
 			free(myself->u.symlink.link_content);
-	} else if(obj_hdl->type == SOCKET_FILE) {
-		if(myself->u.sock.sock_name != NULL)
-			free(myself->u.sock.sock_name);
-		if(myself->u.sock.sock_dir != NULL)
-			free(myself->u.sock.sock_dir);
-	}
+	} 
 	free(myself);
 	return fsalstat(fsal_error, 0);
 }
 
-void lustre_handle_ops_init(struct fsal_obj_ops *ops)
+void zfs_handle_ops_init(struct fsal_obj_ops *ops)
 {
 	ops->release = release;
-	ops->lookup = lustre_lookup;
-	ops->readdir = lustre_read_dirents;
-	ops->create = lustre_create;
-	ops->mkdir = lustre_makedir;
-	ops->mknode = lustre_makenode;
-	ops->symlink = lustre_makesymlink;
-	ops->readlink = lustre_readsymlink;
+	ops->lookup = zfs_lookup;
+	//////////////////////////////////////ops->readdir = zfs_read_dirents;
+	ops->create = zfs_create;
+	ops->mkdir = zfs_mkdir;
+	ops->mknode = zfs_makenode;
+	ops->symlink = zfs_makesymlink;
+	ops->readlink = zfs_readsymlink;
 	ops->test_access = fsal_test_access;
-	ops->getattrs = lustre_getattrs;
-	ops->setattrs = lustre_setattrs;
-	ops->link = lustre_linkfile;
-	ops->rename = lustre_renamefile;
-	ops->unlink = lustre_file_unlink;
-	ops->truncate = lustre_file_truncate;
-	ops->open = lustre_open;
-	ops->status = lustre_status;
-	ops->read = lustre_read;
-	ops->write = lustre_write;
-	ops->commit = lustre_commit;
-	ops->lock_op = lustre_lock_op;
-	ops->close = lustre_close;
-	ops->lru_cleanup = lustre_lru_cleanup;
+	ops->getattrs = zfs_getattrs;
+	ops->setattrs = zfs_setattrs;
+	ops->link = zfs_linkfile;
+	ops->rename = zfs_renamefile;
+	ops->unlink = zfs_file_unlink;
+	ops->truncate = zfs_file_truncate;
+	ops->open = zfs_open;
+	ops->status = zfs_status;
+	ops->read = zfs_read;
+	ops->write = zfs_write;
+	///////////////////////ops->commit = zfs_commit;
+	//////////////////////ops->lock_op = zfs_lock_op;
+	ops->close = zfs_close;
+	ops->lru_cleanup = zfs_lru_cleanup;
 	ops->compare = compare;
-	ops->handle_digest = lustre_handle_digest;
-	ops->handle_to_key = lustre_handle_to_key;
+	ops->handle_digest = zfs_handle_digest;
+	ops->handle_to_key = zfs_handle_to_key;
 }
 
 /* export methods that create object handles
  */
 
-/* lookup_path
- * modeled on old api except we don't stuff attributes.
- * KISS
- * @todo : use of dirfd is no more needed with FSAL_LUSTRE
- */
-
-fsal_status_t lustre_lookup_path(struct fsal_export *exp_hdl,
-				 const struct req_op_context *opctx,
-				 const char *path,
-				 struct fsal_obj_handle **handle)
-{
-	int dir_fd;
-	struct stat stat;
-	struct zfs_fsal_obj_handle *hdl;
-	char *basepart;
-	fsal_errors_t fsal_error = ERR_FSAL_NO_ERROR;
-	int retval = 0;
-	char *link_content = NULL;
-	ssize_t retlink;
-	struct zfs_file_handle *dir_fh = NULL;
-	char *sock_name = NULL;
-        char dirpart[MAXPATHLEN] ;
-        char dirfullpath[MAXPATHLEN] ;
-	struct zfs_file_handle *fh
-		= alloca(sizeof(struct zfs_file_handle) );
-
-	memset(fh, 0, sizeof(struct zfs_file_handle) );
-	if(path == NULL
-	   || path[0] != '/'
-	   || strlen(path) > PATH_MAX
-	   || strlen(path) < 2) {
-		fsal_error = ERR_FSAL_INVAL;
-		goto errout;
-	}
-	basepart = rindex(path, '/');
-	if(basepart[1] == '\0') {
-		fsal_error = ERR_FSAL_INVAL;
-		goto errout;
-	}
-	if(basepart == path) {
-		dir_fd = open("/", O_RDONLY);
-	} else {
-		memcpy(dirpart, path, basepart - path);
-		dirpart[basepart - path] = '\0';
-		dir_fd = open(dirpart, O_RDONLY, 0600);
-	}
-	if(dir_fd < 0) {
-		retval = errno;
-		fsal_error = posix2fsal_error(retval);
-		goto errout;
-	}
-	retval = fstat(dir_fd, &stat);
-	if( !S_ISDIR(stat.st_mode)) {  /* this had better be a DIR! */
-		goto fileerr;
-	}
-	basepart++;
-        snprintf( dirfullpath, MAXPATHLEN, "%s/%s", dirpart, basepart ) ;
-	retval = lustre_path_to_handle(path, fh);
-	if(retval < 0) {
-		goto fileerr;
-	}
-
-	/* what about the file? Do no symlink chasing here. */
-	retval = fstatat(dir_fd, basepart, &stat, AT_SYMLINK_NOFOLLOW);
-	if(retval < 0) {
-		goto fileerr;
-	}
-	if(S_ISLNK(stat.st_mode)) {
-		link_content = malloc(PATH_MAX);
-		retlink = readlinkat(dir_fd, basepart,
-				     link_content, PATH_MAX);
-		if(retlink < 0 || retlink == PATH_MAX) {
-			retval = errno;
-			if(retlink == PATH_MAX)
-				retval = ENAMETOOLONG;
-			goto linkerr;
-		}
-		link_content[retlink] = '\0';
-	} else if(S_ISSOCK(stat.st_mode)) { /* AF_UNIX sockets require craziness */
-		dir_fh = malloc(sizeof(struct zfs_file_handle) );
-		memset(dir_fh, 0, sizeof(struct zfs_file_handle) );
-		retval = lustre_path_to_handle( path,
-					        dir_fh ) ;
-		if(retval < 0) {
-			goto fileerr;
-		}
-		sock_name = basepart;
-	}
-	close(dir_fd);
-
-	/* allocate an obj_handle and fill it up */
-	hdl = alloc_handle(fh, &stat, link_content, dir_fh, sock_name, exp_hdl);
-	if(link_content != NULL)
-		free(link_content);
-	if(dir_fh != NULL)
-		free(dir_fh);
-	if(hlustre_file_handledl == NULL) {
-		fsal_error = ERR_FSAL_NOMEM;
-		*handle = NULL; /* poison it */
-		goto errout;
-	}
-	*handle = &hdl->obj_handle;
-	return fsalstat(ERR_FSAL_NO_ERROR, 0);
-
-fileerr:
-	retval = errno;
-linkerr:
-	if(link_content != NULL)
-		free(link_content);
-	if(dir_fh != NULL)
-		free(dir_fh);
-	close(dir_fd);
-	fsal_error = posix2fsal_error(retval);
-
-errout:
-	return fsalstat(fsal_error, retval);	
-}
-lustre_file_handle
 /* create_handle
  * Does what original FSAL_ExpandHandle did (sort of)
  * returns a ref counted handle to be later used in cache_inode etc.
@@ -1323,57 +1091,32 @@ lustre_file_handle
  * Ideas and/or clever hacks are welcome...
  */
 
-fsal_status_t lustre_create_handle(struct fsal_export *exp_hdl,
-				   const struct req_op_context *opctx,
-				   struct gsh_buffdesc *hdl_desc,
-				   struct fsal_obj_handle **handle)
+fsal_status_t zfs_create_handle( struct fsal_export *exp_hdl,
+				 const struct req_op_context *opctx,
+				 struct gsh_buffdesc *hdl_desc,
+				 struct fsal_obj_handle **handle)
 {
 	struct zfs_fsal_obj_handle *hdl;
-	struct stat stat;
+        int type = 0 ;
 	struct zfs_file_handle  *fh;
 	fsal_errors_t fsal_error = ERR_FSAL_NO_ERROR;
-	int retval = 0;
-        char objpath[MAXPATHLEN] ;
-	char *link_content = NULL;
-	ssize_t retlink;
-	char link_buff[PATH_MAX];
-
-	
 
 	*handle = NULL; /* poison it first */
 	if( hdl_desc->len > sizeof(struct zfs_file_handle) ) 
 		return fsalstat(ERR_FSAL_FAULT, 0);
 
+        type = ((struct zfs_file_handle *)(hdl_desc->addr))->type ;
+
 	fh = alloca(hdl_desc->len);
 	memcpy(fh, hdl_desc->addr, hdl_desc->len);  /* struct aligned copy */
-        lustre_handle_to_path( lustre_get_root_path( exp_hdl ), fh, objpath ) ;
-	retval = lstat( objpath, &stat);
-	if(retval < 0) {
-		retval = errno;
-		fsal_error = posix2fsal_error(retval);
-		goto errout;
-	}
-	if(S_ISLNK(stat.st_mode)) { /* I could lazy eval this... */
-		retlink = readlink(objpath, link_buff, PATH_MAX);
-		if(retlink < 0 || retlink == PATH_MAX) {
-			retval = errno;
-			if(retlink == PATH_MAX)
-				retval = ENAMETOOLONG;
-			fsal_error = posix2fsal_error(retval);
-			goto errout;
-		}
-		link_buff[retlink] = '\0';
-		link_content = &link_buff[0];
-	}
 
-	hdl = alloc_handle(fh, &stat, link_content, NULL, NULL, exp_hdl);
+	hdl = alloc_handle(fh, NULL, type, exp_hdl);
 	if(hdl == NULL) {
 		fsal_error = ERR_FSAL_NOMEM;
-		goto errout;
+	        return fsalstat(fsal_error, 0 );	
 	}
 	*handle = &hdl->obj_handle;
 	
-errout:
-	return fsalstat(fsal_error, retval);	
+	return fsalstat(fsal_error, 0 );	
 }
 
