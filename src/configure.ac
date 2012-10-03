@@ -337,8 +337,28 @@ if test "$enable_fsal_lustre" == "yes"; then
                 LUSTRE_LIB="\$(top_builddir)/FSAL/FSAL_LUSTRE/libfsallustre.la"
         fi
 fi
-
 AM_CONDITIONAL([USE_FSAL_LUSTRE], test "[$enable_fsal_lustre]"  == "yes")
+
+# Turn ZFS on if we have got libzfswrap on the machine
+AC_ARG_ENABLE([fsal-zfs],AS_HELP_STRING([--disable-zfs],[USE_FSAL_ZFS]),
+              [enable_fsal_ZFS]=$enableval, [enable_fsal_zfs]='yes')
+
+if test "$enable_fsal_zfs" == "yes"; then
+	AC_CHECK_HEADERS([libzfswrap.h], [], [enable_fsal_zfs='no'
+                                              AC_MSG_WARN([Missing libzfswrap files.  Disabling ZFS.])])
+        PKG_CHECK_MODULES(ZFSWRAP, libzfswrap,[enable_fsal_zfs='yes'], [enable_fsal_zfs='no'
+						   AC_MSG_WARN([Missing libzfswrap lib.  Disabling ZFS.])])
+
+	if test "x$enable_fsal_zfs" == "xyes" ; then
+	    AC_DEFINE([_USE_ZFS], 1, [GANESHA exports ZFS Filesystem])
+	    # check if this Lustre version has HSM functions
+            ZFS_CFLAGS="$ZFSWRAP_CFLAGS"
+            ZFS_LDFLAGS="$ZFSWRAP_LIBS"
+            ZFS_LIB="\$(top_builddir)/FSAL/FSAL_ZFS/libfsalzfs.la"
+        fi
+fi
+AM_CONDITIONAL([USE_FSAL_ZFS], test "[$enable_fsal_zfs]"  == "yes")
+
 
 # SHOOK is a variant of Lustre FSAL
 
@@ -781,6 +801,10 @@ if test "$enable_fsal_zfs" == "yes"; then
 	])
 	FSAL_LIB="\$(top_builddir)/FSAL/FSAL_ZFS/libfsalzfs.la"
 fi
+AC_SUBST(ZFS_CFLAGS)
+AC_SUBST(ZFS_LDFLAGS)
+AC_SUBST(ZFS_LIB)
+
 
 if test "$enable_fsal_posix" == "yes"; then
 	AC_DEFINE([_USE_POSIX], 1, [GANESHA is compiled with POSIX FSAL])
