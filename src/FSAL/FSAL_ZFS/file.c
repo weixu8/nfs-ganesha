@@ -41,49 +41,68 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include "FSAL/fsal_commonlib.h"
-#include "lustre_methods.h"
-#include "FSAL/FSAL_LUSTRE/fsal_handle.h"
+#include "zfs_methods.h"
+#include "FSAL/FSAL_ZFS/fsal_types.h"
 #include <stdbool.h>
+
+libzfswrap_vfs_t *ZFSFSAL_GetVFS(zfs_file_handle_t *handle) ;
 
 /** lustre_open
  * called with appropriate locks taken at the cache inode level
  */
 
-fsal_status_t lustre_open(struct fsal_obj_handle *obj_hdl,
-		       fsal_openflags_t openflags)
+fsal_status_t zfs_open( struct fsal_obj_handle *obj_hdl,
+		        fsal_openflags_t openflags)
 {
-	struct lustre_fsal_obj_handle *myself;
-	int fd;
+	struct zfs_fsal_obj_handle *myself;
 	fsal_errors_t fsal_error = ERR_FSAL_NO_ERROR;
-	int retval = 0;
+	int rc = 0;
+        libzfswrap_vnode_t *p_vnode;
+        creden_t cred;
+        int posix_flags;
+ 
+        /* At this point, test_access has been run and access is checked
+         * as a workaround let's use root credentials */
+        cred.uid = 0 ;
+        cred.gid = 0 ;
+ 
+        rc = fsal2posix_openflags(openflags, &posix_flags);
+        if( rc ) 
+          return fsalstat( ERR_FSAL_INVAL, rc ) ;
 
-	myself = container_of(obj_hdl, struct lustre_fsal_obj_handle, obj_handle);
+	myself = container_of(obj_hdl, struct zfs_fsal_obj_handle, obj_handle);
+        
+        rc = libzfswrap_open( ZFSFSAL_GetVFS( myself->handle ), 
+                             &cred,
+                             myself->handle->zfs_handle,  
+                             posix_flags, 
+                             &p_vnode);
 
-	assert(myself->u.file.fd == -1
-	       && myself->u.file.openflags == FSAL_O_CLOSED);
+        if( rc )
+         { 
+           fsal_error = posix2fsal_error( rc );
+	   return fsalstat( fsal_error, rc );	
+         }
+ 
+        /* >> fill output struct << */
+        myself->u.file.openflags = posix_flags;
+        myself->u.file.current_offset = 0;
+        myself->u.file.p_vnode = p_vnode;
+        myself->u.file.cred = cred;
+        myself->u.file.is_closed = 0;
 
-	fd = lustre_open_by_handle( lustre_get_root_path( obj_hdl->export),myself->handle, (O_RDWR));
-	if(fd < 0) {
-		fsal_error = posix2fsal_error(errno);
-		retval = errno;
-		goto out;
-	}
-	myself->u.file.fd = fd;
-	myself->u.file.openflags = openflags;
-
-out:
-	return fsalstat(fsal_error, retval);	
+	return fsalstat(fsal_error, rc );	
 }
 
 /* lustre_status
  * Let the caller peek into the file's open/close state.
  */
 
-fsal_openflags_t lustre_status(struct fsal_obj_handle *obj_hdl)
+fsal_openflags_t zfs_status(struct fsal_obj_handle *obj_hdl)
 {
-	struct lustre_fsal_obj_handle *myself;
+	struct zfs_fsal_obj_handle *myself;
 
-	myself = container_of(obj_hdl, struct lustre_fsal_obj_handle, obj_handle);
+	myself = container_of(obj_hdl, struct zfs_fsal_obj_handle, obj_handle);
 	return myself->u.file.openflags;
 }
 
@@ -91,7 +110,7 @@ fsal_openflags_t lustre_status(struct fsal_obj_handle *obj_hdl)
  * concurrency (locks) is managed in cache_inode_*
  */
 
-fsal_status_t lustre_read(struct fsal_obj_handle *obj_hdl,
+fsal_status_t zfs_read(struct fsal_obj_handle *obj_hdl,
                        const struct req_op_context *opctx,
 		       uint64_t offset,
                        size_t buffer_size,
@@ -99,62 +118,75 @@ fsal_status_t lustre_read(struct fsal_obj_handle *obj_hdl,
 		       size_t *read_amount,
 		       bool *end_of_file)
 {
-	struct lustre_fsal_obj_handle *myself;
-	ssize_t nb_read;
+	struct zfs_fsal_obj_handle *myself;
 	fsal_errors_t fsal_error = ERR_FSAL_NO_ERROR;
-	int retval = 0;
+	int rc = 0;
+        creden_t cred;
+        int behind = 0;
 
-	myself = container_of(obj_hdl, struct lustre_fsal_obj_handle, obj_handle);
+        cred.uid = opctx->creds->caller_uid;
+        cred.gid = opctx->creds->caller_gid;
 
-	assert(myself->u.file.fd >= 0 && myself->u.file.openflags != FSAL_O_CLOSED);
+	myself = container_of(obj_hdl, struct zfs_fsal_obj_handle, obj_handle);
 
-        nb_read = pread(myself->u.file.fd,
-                        buffer,
-                        buffer_size,
-                        offset);
+	assert(myself->u.file.openflags != FSAL_O_CLOSED);
 
-        if(offset == -1 || nb_read == -1) {
-                retval = errno;
-                fsal_error = posix2fsal_error(retval);
-                goto out;
-        }
-        *end_of_file = nb_read == 0 ? true : false;
-        *read_amount = nb_read;
-out:
-	return fsalstat(fsal_error, retval);	
+        rc = libzfswrap_read( ZFSFSAL_GetVFS( myself->handle ),  
+                              &cred, 
+                              myself->u.file.p_vnode,
+                              buffer, 
+                              buffer_size, 
+                              behind, 
+                              offset );
+
+        if(!rc) 
+           * end_of_file = true ;
+        
+
+        fsal_error = posix2fsal_error( rc );
+
+        *read_amount = buffer_size;
+
+	return fsalstat(fsal_error, rc);	
 }
 
 /* lustre_write
  * concurrency (locks) is managed in cache_inode_*
  */
 
-fsal_status_t lustre_write(struct fsal_obj_handle *obj_hdl,
+fsal_status_t zfs_write(struct fsal_obj_handle *obj_hdl,
                         const struct req_op_context *opctx,
 			uint64_t offset,
 			size_t buffer_size,
 			void *buffer,
 			size_t *write_amount)
 {
-	struct lustre_fsal_obj_handle *myself;
-	ssize_t nb_written;
+	struct zfs_fsal_obj_handle *myself;
 	fsal_errors_t fsal_error = ERR_FSAL_NO_ERROR;
+        creden_t cred;
 	int retval = 0;
+        int behind = 0 ;
 
-	myself = container_of(obj_hdl, struct lustre_fsal_obj_handle, obj_handle);
+        cred.uid = opctx->creds->caller_uid;
+        cred.gid = opctx->creds->caller_gid;
 
-	assert(myself->u.file.fd >= 0 && myself->u.file.openflags != FSAL_O_CLOSED);
+	myself = container_of(obj_hdl, struct zfs_fsal_obj_handle, obj_handle);
 
-        nb_written = pwrite(myself->u.file.fd,
-                            buffer,
-                            buffer_size,
-                            offset);
+	assert(myself->u.file.openflags != FSAL_O_CLOSED);
 
-	if(offset == -1 || nb_written == -1) {
-		retval = errno;
+        retval = libzfswrap_write( ZFSFSAL_GetVFS( myself->handle ),
+                                   &cred, 
+                                   myself->u.file.p_vnode,
+                                   buffer, 
+                                   buffer_size, 
+                                   behind, 
+                                   offset);
+
+	if(offset == -1 ) {
 		fsal_error = posix2fsal_error(retval);
 		goto out;
 	}
-	*write_amount = nb_written;
+	*write_amount = buffer_size;
 out:
 	return fsalstat(fsal_error, retval);	
 }
@@ -164,139 +196,13 @@ out:
  * for right now, fsync will have to do.
  */
 
-fsal_status_t lustre_commit(struct fsal_obj_handle *obj_hdl, /* sync */
-			 off_t offset,
-			 size_t len)
+fsal_status_t zfs_commit( struct fsal_obj_handle *obj_hdl, /* sync */
+			  off_t offset,
+			  size_t len)
 {
-	struct lustre_fsal_obj_handle *myself;
-	fsal_errors_t fsal_error = ERR_FSAL_NO_ERROR;
-	int retval = 0;
-
-	myself = container_of(obj_hdl, struct lustre_fsal_obj_handle, obj_handle);
-
-	assert(myself->u.file.fd >= 0 && myself->u.file.openflags != FSAL_O_CLOSED);
-
-	retval = fsync(myself->u.file.fd);
-	if(retval == -1) {
-		retval = errno;
-		fsal_error = posix2fsal_error(retval);
-	}
-	return fsalstat(fsal_error, retval);	
+	return fsalstat( ERR_FSAL_NO_ERROR, 0);	
 }
 
-/* lustre_lock_op
- * lock a region of the file
- * throw an error if the fd is not open.  The old fsal didn't
- * check this.
- */
-
-fsal_status_t lustre_lock_op(struct fsal_obj_handle *obj_hdl,
-			  void * p_owner,
-			  fsal_lock_op_t lock_op,
-			  fsal_lock_param_t *request_lock,
-			  fsal_lock_param_t *conflicting_lock)
-{
-	struct lustre_fsal_obj_handle *myself;
-	struct flock lock_args;
-	int fcntl_comm;
-	fsal_errors_t fsal_error = ERR_FSAL_NO_ERROR;
-	int retval = 0;
-
-	myself = container_of(obj_hdl, struct lustre_fsal_obj_handle, obj_handle);
-	if(myself->u.file.fd < 0 || myself->u.file.openflags == FSAL_O_CLOSED) {
-		LogDebug(COMPONENT_FSAL,
-			 "Attempting to lock with no file descriptor open");
-		fsal_error = ERR_FSAL_FAULT;
-		goto out;
-	}
-	if(p_owner != NULL) {
-		fsal_error = ERR_FSAL_NOTSUPP;
-		goto out;
-	}
-	if(conflicting_lock == NULL && lock_op == FSAL_OP_LOCKT) {
-		LogDebug(COMPONENT_FSAL,
-			 "conflicting_lock argument can't"
-			 " be NULL with lock_op  = LOCKT");
-		fsal_error = ERR_FSAL_FAULT;
-		goto out;
-	}
-	LogFullDebug(COMPONENT_FSAL,
-		     "Locking: op:%d type:%d start:%"PRIu64" length:%lu ",
-		     lock_op,
-		     request_lock->lock_type,
-		     request_lock->lock_start,
-		     request_lock->lock_length);
-	if(lock_op == FSAL_OP_LOCKT) {
-		fcntl_comm = F_GETLK;
-	} else if(lock_op == FSAL_OP_LOCK || lock_op == FSAL_OP_UNLOCK) {
-		fcntl_comm = F_SETLK;
-	} else {
-		LogDebug(COMPONENT_FSAL,
-			 "ERROR: Lock operation requested was not TEST, READ, or WRITE.");
-		fsal_error = ERR_FSAL_NOTSUPP;
-		goto out;
-	}
-
-	if(request_lock->lock_type == FSAL_LOCK_R) {
-		lock_args.l_type = F_RDLCK;
-	} else if(request_lock->lock_type == FSAL_LOCK_W) {
-		lock_args.l_type = F_WRLCK;
-	} else {
-		LogDebug(COMPONENT_FSAL,
-			 "ERROR: The requested lock type was not read or write.");
-		fsal_error = ERR_FSAL_NOTSUPP;
-		goto out;
-	}
-
-	if(lock_op == FSAL_OP_UNLOCK)
-		lock_args.l_type = F_UNLCK;
-
-	lock_args.l_len = request_lock->lock_length;
-	lock_args.l_start = request_lock->lock_start;
-	lock_args.l_whence = SEEK_SET;
-
-	errno = 0;
-	retval = fcntl(myself->u.file.fd, fcntl_comm, &lock_args);
-	if(retval && lock_op == FSAL_OP_LOCK) {
-		retval = errno;
-		if(conflicting_lock != NULL) {
-			fcntl_comm = F_GETLK;
-			retval = fcntl(myself->u.file.fd,
-				       fcntl_comm,
-				       &lock_args);
-			if(retval) {
-				retval = errno; /* we lose the inital error */
-				LogCrit(COMPONENT_FSAL,
-					"After failing a lock request, I couldn't even"
-					" get the details of who owns the lock.");
-				fsal_error = posix2fsal_error(retval);
-				goto out;
-			}
-			if(conflicting_lock != NULL) {
-				conflicting_lock->lock_length = lock_args.l_len;
-				conflicting_lock->lock_start = lock_args.l_start;
-				conflicting_lock->lock_type = lock_args.l_type;
-			}
-		}
-		fsal_error = posix2fsal_error(retval);
-		goto out;
-	}
-
-	/* F_UNLCK is returned then the tested operation would be possible. */
-	if(conflicting_lock != NULL) {
-		if(lock_op == FSAL_OP_LOCKT && lock_args.l_type != F_UNLCK) {
-			conflicting_lock->lock_length = lock_args.l_len;
-			conflicting_lock->lock_start = lock_args.l_start;
-			conflicting_lock->lock_type = lock_args.l_type;
-		} else {
-			conflicting_lock->lock_length = 0;
-			conflicting_lock->lock_start = 0;
-			conflicting_lock->lock_type = FSAL_NO_LOCK;
-		}
-	}
-out:
-	return fsalstat(fsal_error, retval);	
-}
 
 /* lustre_close
  * Close the file if it is still open.
@@ -304,20 +210,16 @@ out:
  * releases all locks but that is state and cache inode's problem.
  */
 
-fsal_status_t lustre_close(struct fsal_obj_handle *obj_hdl)
+fsal_status_t zfs_close(struct fsal_obj_handle *obj_hdl)
 {
-	struct lustre_fsal_obj_handle *myself;
+	struct zfs_fsal_obj_handle *myself;
 	fsal_errors_t fsal_error = ERR_FSAL_NO_ERROR;
 	int retval = 0;
 
-	myself = container_of(obj_hdl, struct lustre_fsal_obj_handle, obj_handle);
-	retval = close(myself->u.file.fd);
-	if(retval < 0) {
-		retval = errno;
-		fsal_error = posix2fsal_error(retval);
-	}
-	myself->u.file.fd = -1;
+	myself = container_of(obj_hdl, struct zfs_fsal_obj_handle, obj_handle);
+
 	myself->u.file.openflags = FSAL_O_CLOSED;
+	myself->u.file.is_closed = true ;
 	return fsalstat(fsal_error, retval);	
 }
 
@@ -327,22 +229,16 @@ fsal_status_t lustre_close(struct fsal_obj_handle *obj_hdl)
  * trimming.
  */
 
-fsal_status_t lustre_lru_cleanup(struct fsal_obj_handle *obj_hdl,
+fsal_status_t zfs_lru_cleanup(struct fsal_obj_handle *obj_hdl,
 			      lru_actions_t requests)
 {
-	struct lustre_fsal_obj_handle *myself;
+	struct zfs_fsal_obj_handle *myself;
 	fsal_errors_t fsal_error = ERR_FSAL_NO_ERROR;
 	int retval = 0;
 
-	myself = container_of(obj_hdl, struct lustre_fsal_obj_handle, obj_handle);
-	if(myself->u.file.fd >= 0) {
-		retval = close(myself->u.file.fd);
-		myself->u.file.fd = -1;
-		myself->u.file.openflags = FSAL_O_CLOSED;
-	}
-	if(retval == -1) {
-		retval = errno;
-		fsal_error = posix2fsal_error(retval);
-	}
+	myself = container_of(obj_hdl, struct zfs_fsal_obj_handle, obj_handle);
+	myself->u.file.is_closed = true ;
+        myself->u.file.openflags = FSAL_O_CLOSED;
+	
 	return fsalstat(fsal_error, retval);	
 }
