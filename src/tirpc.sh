@@ -2,7 +2,13 @@
 
 OPWD=`pwd`
 
-TIRPC_REPO='git://github.com/mattbenjamin/libtirpc-lbx.git'
+
+if [ ! -z $ENV_REPO ] ; then
+   TIRPC_REPO=$ENV_REPO
+else
+   TIRPC_REPO='git://github.com/mattbenjamin/libtirpc-lbx.git'
+fi
+
 
 TIRPC_BRANCH_NAME='duplex-8-par-5'
 TIRPC_COMMIT='afa60a22406ad02e9d100be4c6dc6cf9f5276e31'
