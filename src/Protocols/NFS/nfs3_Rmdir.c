@@ -99,14 +99,7 @@ nfs_Rmdir(nfs_arg_t *arg,
         if (isDebug(COMPONENT_NFSPROTO)) {
                 char str[LEN_FH_STR];
 
-                switch (req->rq_vers) {
-                case NFS_V2:
-                        name = arg->arg_rmdir2.name;
-                        break;
-                case NFS_V3:
-                        name = arg->arg_rmdir3.object.name;
-                        break;
-                }
+                name = arg->arg_rmdir3.object.name;
 
                 nfs_FhandleToStr(req->rq_vers,
                                  &arg->arg_rmdir2.dir,
@@ -118,13 +111,9 @@ nfs_Rmdir(nfs_arg_t *arg,
                          "name: %s", str, name);
         }
 
-        if (req->rq_vers == NFS_V3) {
-                /* to avoid setting it on each error case */
-                res->res_rmdir3.RMDIR3res_u.resfail.dir_wcc.before
-                        .attributes_follow = FALSE;
-                res->res_rmdir3.RMDIR3res_u.resfail.dir_wcc.after
-                        .attributes_follow = FALSE;
-        }
+        /* to avoid setting it on each error case */
+        res->res_rmdir3.RMDIR3res_u.resfail.dir_wcc.before.attributes_follow = FALSE;
+        res->res_rmdir3.RMDIR3res_u.resfail.dir_wcc.after.attributes_follow = FALSE;
 
         /* Convert file handle into a pentry */
         if ((parent_entry = nfs_FhandleToCache(req_ctx,
@@ -147,28 +136,13 @@ nfs_Rmdir(nfs_arg_t *arg,
         /* Sanity checks: directory name must be non-null; parent
            must be a directory. */
         if (parent_entry->type != DIRECTORY) {
-                switch (req->rq_vers) {
-                case NFS_V2:
-                        res->res_stat2 = NFSERR_NOTDIR;
-                        break;
-                case NFS_V3:
-                        res->res_rmdir3.status = NFS3ERR_NOTDIR;
-                        break;
-                }
+                res->res_rmdir3.status = NFS3ERR_NOTDIR;
 
                 rc = NFS_REQ_OK;
                 goto out;
         }
 
-        switch (req->rq_vers) {
-        case NFS_V2:
-                name = arg->arg_rmdir2.name;
-                break;
-
-        case NFS_V3:
-                name = arg->arg_rmdir3.object.name;
-                break;
-        }
+        name = arg->arg_rmdir3.object.name;
 
         if ((name == NULL) ||
             (*name == '\0' )) {
@@ -184,15 +158,8 @@ nfs_Rmdir(nfs_arg_t *arg,
                 /* Sanity check: make sure we are about to remove a
                    directory */
                 if (child_entry->type != DIRECTORY) {
-                        switch (req->rq_vers) {
-                        case NFS_V2:
-                                res->res_stat2 = NFSERR_NOTDIR;
-                                break;
-
-                        case NFS_V3:
-                                res->res_rmdir3.status = NFS3ERR_NOTDIR;
-                                break;
-                        }
+                        res->res_rmdir3.status = NFS3ERR_NOTDIR;
+                        
                         rc = NFS_REQ_OK;
                         goto out;
                 }
@@ -205,51 +172,34 @@ nfs_Rmdir(nfs_arg_t *arg,
             != CACHE_INODE_SUCCESS) {
         }
 
-        switch (req->rq_vers) {
-        case NFS_V2:
-                res->res_stat2 = NFS_OK;
-                break;
-
-        case NFS_V3:
-                nfs_SetWccData(&pre_parent,
-                               parent_entry,
-                               req_ctx,
-                               &res->res_rmdir3.RMDIR3res_u.resok.dir_wcc);
-                res->res_rmdir3.status = NFS3_OK;
-                break;
-        }
+        nfs_SetWccData(&pre_parent,
+                       parent_entry,
+                       req_ctx,
+                       &res->res_rmdir3.RMDIR3res_u.resok.dir_wcc);
+        res->res_rmdir3.status = NFS3_OK;
 
         rc = NFS_REQ_OK;
 
 
 out:
         /* return references */
-        if (child_entry) {
+        if (child_entry) 
                 cache_inode_put(child_entry);
-        }
+        
 
-        if (parent_entry) {
+        if (parent_entry) 
                 cache_inode_put(parent_entry);
-        }
+        
 
         return rc;
 
 out_fail:
 
-        switch (req->rq_vers) {
-        case NFS_V2:
-                res->res_stat2 = nfs2_Errno(cache_status);
-                break;
-
-        case NFS_V3:
-                res->res_rmdir3.status = nfs3_Errno(cache_status);
-                nfs_SetWccData(&pre_parent,
-                               parent_entry,
-                               req_ctx,
-                               &res->res_rmdir3.RMDIR3res_u.resfail.dir_wcc);
-
-                break;
-        }
+        res->res_rmdir3.status = nfs3_Errno(cache_status);
+        nfs_SetWccData(&pre_parent,
+                       parent_entry,
+                       req_ctx,
+                       &res->res_rmdir3.RMDIR3res_u.resfail.dir_wcc);
 
         /* If we are here, there was an error */
         if (nfs_RetryableError(cache_status)) {
@@ -257,13 +207,11 @@ out_fail:
         }
 
         /* return references */
-        if (child_entry) {
+        if (child_entry) 
                 cache_inode_put(child_entry);
-        }
 
-        if (parent_entry) {
+        if (parent_entry) 
                 cache_inode_put(parent_entry);
-        }
 
         return rc;
 } /* nfs_Rmdir */
