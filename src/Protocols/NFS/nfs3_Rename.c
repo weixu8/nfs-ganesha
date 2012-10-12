@@ -102,17 +102,8 @@ nfs_Rename(nfs_arg_t *arg,
         if (isDebug(COMPONENT_NFSPROTO)) {
                 char strto[LEN_FH_STR], strfrom[LEN_FH_STR];
 
-                switch (req->rq_vers) {
-                case NFS_V2:
-                        entry_name = arg->arg_rename2.from.name;
-                        new_entry_name = arg->arg_rename2.to.name;
-                        break;
-
-                case NFS_V3:
-                        entry_name = arg->arg_rename3.from.name;
-                        new_entry_name = arg->arg_rename3.to.name;
-                        break;
-                }
+                entry_name = arg->arg_rename3.from.name;
+                new_entry_name = arg->arg_rename3.to.name;
 
                 nfs_FhandleToStr(req->rq_vers,
                                  &arg->arg_rename2.from.dir,
@@ -131,17 +122,11 @@ nfs_Rename(nfs_arg_t *arg,
                          strfrom, entry_name, strto, new_entry_name);
         }
 
-        if (req->rq_vers == NFS_V3) {
-                /* to avoid setting it on each error case */
-                res->res_rename3.RENAME3res_u.resfail.fromdir_wcc.before
-                        .attributes_follow = FALSE;
-                res->res_rename3.RENAME3res_u.resfail.fromdir_wcc.after
-                        .attributes_follow = FALSE;
-                res->res_rename3.RENAME3res_u.resfail.todir_wcc.before
-                        .attributes_follow = FALSE;
-                res->res_rename3.RENAME3res_u.resfail.todir_wcc.after
-                        .attributes_follow = FALSE;
-        }
+        /* to avoid setting it on each error case */
+        res->res_rename3.RENAME3res_u.resfail.fromdir_wcc.before.attributes_follow = FALSE;
+        res->res_rename3.RENAME3res_u.resfail.fromdir_wcc.after.attributes_follow = FALSE;
+        res->res_rename3.RENAME3res_u.resfail.todir_wcc.before.attributes_follow = FALSE;
+        res->res_rename3.RENAME3res_u.resfail.todir_wcc.after.attributes_follow = FALSE;
 
         /* Convert fromdir file handle into a cache_entry */
         if ((parent_entry = nfs_FhandleToCache(req_ctx,
@@ -182,31 +167,14 @@ nfs_Rename(nfs_arg_t *arg,
         /* Sanity checks: both parents must be directories */
         if ((parent_entry->type != DIRECTORY) ||
             (new_parent_entry->type != DIRECTORY)) {
-                switch (req->rq_vers) {
-                case NFS_V2:
-                        res->res_stat2 = NFSERR_NOTDIR;
-                        break;
-
-                case NFS_V3:
-                        res->res_rename3.status = NFS3ERR_NOTDIR;
-                        break;
-                }
+                res->res_rename3.status = NFS3ERR_NOTDIR;
 
                 rc = NFS_REQ_OK;
                 goto out;
         }
 
-        switch (req->rq_vers) {
-        case NFS_V2:
-                entry_name = arg->arg_rename2.from.name;
-                new_entry_name = arg->arg_rename2.to.name;
-                break;
-
-        case NFS_V3:
-                entry_name = arg->arg_rename3.from.name;
-                new_entry_name = arg->arg_rename3.to.name;
-                break;
-        }
+        entry_name = arg->arg_rename3.from.name;
+        new_entry_name = arg->arg_rename3.to.name;
 
         if(entry_name == NULL ||
            *entry_name == '\0' ||
@@ -231,66 +199,47 @@ nfs_Rename(nfs_arg_t *arg,
                 goto out_fail;
         }
 
-        switch (req->rq_vers) {
-        case NFS_V2:
-                res->res_stat2 = NFS_OK;
-                break;
-
-        case NFS_V3:
-                res->res_rename3.status = NFS3_OK;
-                nfs_SetWccData(&pre_parent,
-                               parent_entry,
-                               req_ctx,
-                               &res->res_rename3.RENAME3res_u.resok
-                               .fromdir_wcc);
-                nfs_SetWccData(&pre_new_parent,
-                               new_parent_entry,
-                               req_ctx,
-                               &res->res_rename3.RENAME3res_u.resok.todir_wcc);
-                break;
-        }
+        res->res_rename3.status = NFS3_OK;
+        nfs_SetWccData(&pre_parent,
+                       parent_entry,
+                       req_ctx,
+                       &res->res_rename3.RENAME3res_u.resok.fromdir_wcc);
+        nfs_SetWccData(&pre_new_parent,
+                       new_parent_entry,
+                       req_ctx,
+                       &res->res_rename3.RENAME3res_u.resok.todir_wcc);
 
         rc = NFS_REQ_OK;
 
-
-
 out:
 
-        if (parent_entry) {
+        if (parent_entry) 
                 cache_inode_put(parent_entry);
-        }
+        
 
-        if (new_parent_entry) {
+        if (new_parent_entry) 
                 cache_inode_put(new_parent_entry);
-        }
+        
 
         return rc;
 
 out_fail:
 
-        switch (req->rq_vers) {
-        case NFS_V2:
-                res->res_stat2 = nfs2_Errno(cache_status);
+        res->res_rename3.status = nfs3_Errno(cache_status);
+        nfs_SetWccData(&pre_parent,
+                       parent_entry,
+                       req_ctx,
+                       &res->res_rename3.RENAME3res_u.resfail.fromdir_wcc);
 
-        case NFS_V3:
-                res->res_rename3.status = nfs3_Errno(cache_status);
-                nfs_SetWccData(&pre_parent,
-                               parent_entry,
-                               req_ctx,
-                               &res->res_rename3.RENAME3res_u.resfail
-                               .fromdir_wcc);
-
-                nfs_SetWccData(&pre_new_parent,
-                               new_parent_entry,
-                               req_ctx,
-                               &res->res_rename3.RENAME3res_u.resfail
-                               .todir_wcc);
-        }
+        nfs_SetWccData(&pre_new_parent,
+                       new_parent_entry,
+                       req_ctx,
+                       &res->res_rename3.RENAME3res_u.resfail.todir_wcc);
 
         /* If we are here, there was an error */
-        if (nfs_RetryableError(cache_status)) {
+        if (nfs_RetryableError(cache_status)) 
                 rc = NFS_REQ_DROP;
-        }
+        
 
         return rc;
 } /* nfs_Rename */
