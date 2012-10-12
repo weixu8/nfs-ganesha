@@ -417,7 +417,6 @@ void dupreq2_pkginit(void)
     init_shared_drc();
 }
 
-extern nfs_function_desc_t nfs2_func_desc[];
 extern nfs_function_desc_t nfs3_func_desc[];
 extern nfs_function_desc_t nfs4_func_desc[];
 extern nfs_function_desc_t mnt1_func_desc[];
@@ -801,9 +800,6 @@ nfs_dupreq_func(dupreq_entry_t *dv)
 
     if(dv->hin.rq_prog == nfs_param.core_param.program[P_NFS]) {
         switch (dv->hin.rq_vers) {
-        case NFS_V2:
-            func = &nfs2_func_desc[dv->hin.rq_proc];
-          break;
         case NFS_V3:
             func = &nfs3_func_desc[dv->hin.rq_proc];
             break;
