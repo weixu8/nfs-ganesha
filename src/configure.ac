@@ -355,6 +355,7 @@ if test "$enable_fsal_zfs" == "yes"; then
             ZFS_CFLAGS="$ZFSWRAP_CFLAGS"
             ZFS_LDFLAGS="$ZFSWRAP_LIBS"
             ZFS_LIB="\$(top_builddir)/FSAL/FSAL_ZFS/libfsalzfs.la"
+            ZFS_LIB="-lzfswrap"
         fi
 fi
 AM_CONDITIONAL([USE_FSAL_ZFS], test "[$enable_fsal_zfs]"  == "yes")
