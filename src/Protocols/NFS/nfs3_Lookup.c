@@ -112,9 +112,7 @@ nfs_Lookup(nfs_arg_t *arg,
         res->res_lookup3.LOOKUP3res_u.resfail.dir_attributes.attributes_follow = FALSE;
 
         if((entry_dir = nfs_FhandleToCache(req_ctx, req->rq_vers,
-                                           NULL,
                                            &(arg->arg_lookup3.what.dir),
-                                           NULL,
                                            NULL,
                                            &(res->res_lookup3.status),
                                            NULL,

@@ -100,9 +100,9 @@ nfs3_Pathconf(nfs_arg_t *arg,
 
         /* Convert file handle into a fsal_handle */
         entry = nfs_FhandleToCache(req_ctx,
-                                   req->rq_vers, NULL,
+                                   req->rq_vers, 
                                    &arg->arg_pathconf3.object,
-                                   NULL, NULL,
+                                   NULL, 
                                    &res->res_pathconf3.status, NULL,
                                    export, &rc);
         if (entry == NULL) {

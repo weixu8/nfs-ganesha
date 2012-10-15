@@ -106,10 +106,8 @@ int nfs_Fsstat(nfs_arg_t *arg,
         res->res_fsstat3.FSSTAT3res_u.resfail.obj_attributes.attributes_follow = FALSE;
 
         if((entry = nfs_FhandleToCache(req_ctx, req->rq_vers,
-                                       &(arg->arg_statfs2),
                                        &(arg->arg_fsstat3.fsroot),
                                        NULL,
-                                       &(res->res_statfs2.status),
                                        &(res->res_fsstat3.status),
                                        NULL,
                                        export,

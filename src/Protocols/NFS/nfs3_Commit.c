@@ -107,8 +107,8 @@ nfs3_Commit(nfs_arg_t *arg,
                 .attributes_follow = FALSE;
 
         entry = nfs_FhandleToCache(req_ctx,
-                                   req->rq_vers, NULL, &arg->arg_commit3.file,
-                                   NULL, NULL, &res->res_commit3.status, NULL,
+                                   req->rq_vers, &arg->arg_commit3.file,
+                                   NULL, &res->res_commit3.status, NULL,
                                    export, &rc);
         if (entry == NULL) {
                 goto out;

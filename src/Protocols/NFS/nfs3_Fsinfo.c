@@ -99,9 +99,9 @@ nfs3_Fsinfo(nfs_arg_t *arg,
                 = FALSE;
 
         entry = nfs_FhandleToCache(req_ctx,
-                                   req->rq_vers, NULL,
+                                   req->rq_vers, 
                                    &arg->arg_fsinfo3.fsroot,
-                                   NULL, NULL, &res->res_fsinfo3.status, NULL,
+                                   NULL, &res->res_fsinfo3.status, NULL,
                                    export, &rc);
         if (entry == NULL) {
                 goto out;

@@ -102,10 +102,8 @@ nfs_Getattr(nfs_arg_t *arg,
         }
 
         if ((entry = nfs_FhandleToCache(req_ctx, req->rq_vers,
-                                        &arg->arg_getattr2,
                                         &arg->arg_getattr3.object,
                                         NULL,
-                                        &res->res_attr2.status,
                                         &res->res_getattr3.status,
                                         NULL, export, &rc)) == NULL) {
                 LogFullDebug(COMPONENT_NFSPROTO,

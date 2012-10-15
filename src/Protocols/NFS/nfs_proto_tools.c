@@ -266,10 +266,8 @@ void nfs_FhandleToStr(u_long     rq_vers,
 cache_entry_t *
 nfs_FhandleToCache(const struct req_op_context *req_ctx,
                    u_long rq_vers,
-                   fhandle2 * fh2,
                    nfs_fh3 * fh3,
                    nfs_fh4 * fh4,
-                   nfsstat2 * status2,
                    nfsstat3 * status3,
                    nfsstat4 * status4,
                    exportlist_t *export,
@@ -309,15 +307,6 @@ nfs_FhandleToCache(const struct req_op_context *req_ctx,
       exportid = nfs3_FhandleToExportId(fh3);
       break;
 
-    case NFS_V2:
-      if(!nfs2_FhandleToFSAL(fh2, &fkey, export->export_hdl))
-        {
-          *rc = NFS_REQ_OK;
-          *status2 = NFSERR_STALE;
-          return NULL;
-        }
-      exportid = nfs2_FhandleToExportId(fh2);
-      break;
     }
 
   fsal_data.fh_desc.addr = fkey.buf;
@@ -339,10 +328,6 @@ nfs_FhandleToCache(const struct req_op_context *req_ctx,
         case NFS_V3:
           *status3 = NFS3ERR_STALE;
           break;
-
-        case NFS_V2:
-          *status2 = NFSERR_STALE;
-          break;
         }
       *rc = NFS_REQ_DROP;
 
@@ -362,10 +347,6 @@ nfs_FhandleToCache(const struct req_op_context *req_ctx,
 
         case NFS_V3:
           *status3 = NFS3ERR_STALE;
-          break;
-
-        case NFS_V2:
-          *status2 = NFSERR_STALE;
           break;
         }
       *rc = NFS_REQ_OK;

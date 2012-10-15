@@ -186,9 +186,7 @@ nfs3_Readdirplus(nfs_arg_t *arg,
      /* Convert file handle into a vnode */
      if ((dir_entry
           = nfs_FhandleToCache(req_ctx, req->rq_vers,
-                               NULL,
                                &(arg->arg_readdirplus3.dir),
-                               NULL,
                                NULL,
                                &(res->res_readdirplus3.status),
                                NULL,
