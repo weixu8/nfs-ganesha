@@ -109,7 +109,6 @@ nfs_Symlink(nfs_arg_t *arg,
                 target_path = arg->arg_symlink3.symlink.symlink_data;
 
                 nfs_FhandleToStr(req->rq_vers,
-                                 &arg->arg_symlink2.from.dir,
                                  &arg->arg_symlink3.where.dir,
                                  NULL,
                                  str);
