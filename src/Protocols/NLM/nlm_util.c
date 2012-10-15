@@ -283,8 +283,8 @@ int nlm_process_parameters(struct svc_req        * preq,
   /* Convert file handle into a cache entry */
   *ppentry = nfs_FhandleToCache(req_ctx,
                                 preq->rq_vers,
-                                NULL, (struct nfs_fh3 *)&alock->fh, NULL,
-                                NULL, &nfsstat3, NULL,
+                                (struct nfs_fh3 *)&alock->fh, NULL,
+                                &nfsstat3, NULL,
                                 pexport, &rc);
   if(*ppentry == NULL || nfsstat3 == NFS3ERR_STALE)
     {
@@ -415,8 +415,8 @@ int nlm_process_share_parms(struct svc_req        * preq,
   /* Convert file handle into a cache entry */
   *ppentry = nfs_FhandleToCache(req_ctx,
                                 preq->rq_vers,
-                                NULL, (struct nfs_fh3 *)&share->fh, NULL,
-                                NULL, &nfsstat3, NULL,
+                                (struct nfs_fh3 *)&share->fh, NULL,
+                                &nfsstat3, NULL,
                                 exp_hdl->exp_entry, &rc);
   if(*ppentry == NULL || nfsstat3 == NFS3ERR_STALE)
     {
