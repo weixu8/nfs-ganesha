@@ -282,7 +282,7 @@ int nlm_process_parameters(struct svc_req        * preq,
 
   /* Convert file handle into a cache entry */
   *ppentry = nfs_FhandleToCache(req_ctx,
-                                preq->rq_vers,
+                                NFS_V3, // Since NFSv2 is removed, NLM is NFSv3 only
                                 (struct nfs_fh3 *)&alock->fh, NULL,
                                 &nfsstat3, NULL,
                                 pexport, &rc);
